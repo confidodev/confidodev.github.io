@@ -69,6 +69,12 @@ th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);verti
 th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface)}
 td.r,th.r{text-align:right}
 tr.sec td{background:var(--chip);font-family:var(--display);font-size:17px;font-weight:600}
+tr.sec{cursor:pointer}
+tr.sec:hover td{filter:brightness(.97)}
+tr.sec:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+tr.sec .car{display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
+tr.sec.open .car{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){tr.sec .car{transition:none}}
 tr.sec td .m{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:500;margin-left:8px}
 tr.row{cursor:pointer}
 tr.row:hover td{background:var(--chip)}
@@ -90,6 +96,15 @@ ul.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;m
 .mapy{font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
 .mapy:hover{text-decoration:underline}
 footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:'▸';color:var(--muted);font-size:18px;transition:transform .15s;display:inline-block}
+details.fold[open]>summary::before{transform:rotate(90deg)}
+details.fold>summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:4px}
+details.fold>summary h2{display:inline}
+.fold-meta{font-family:var(--body);font-size:14px;font-weight:500;color:var(--muted);margin-left:6px}
+.fold-body{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+@media (prefers-reduced-motion:reduce){details.fold>summary::before{transition:none}}
 /* két pont közötti tervező */
 .plan-pick{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
 @media (max-width:640px){.plan-pick{grid-template-columns:1fr}.swap{justify-self:center;transform:rotate(90deg)}}
@@ -211,18 +226,25 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <label for="secsel" style="position:absolute;left:-9999px">OKT-szakasz</label>
       <select id="secsel"><option value="0">Összes OKT-szakasz</option></select>
       <span class="count" id="count"></span>
+      <button class="chip" id="toggleAll" type="button">Mind kinyit</button>
     </div>
     <div class="tablebox"><table id="segs"><thead><tr><th class="r">#</th><th>Bélyegzőhely-szakasz</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Menetidő</th><th>Dénes</th><th>Nóri</th><th>Leírás</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section>
-    <h2>Közös hiányok összefüggő darabokban</h2>
+    <details class="fold" id="runsFold">
+    <summary><h2>Közös hiányok összefüggő darabokban <span class="fold-meta num" id="runsMeta"></span></h2></summary>
+    <div class="fold-body">
     <p class="lead">Ezek a részek egyikőtöknek sincsenek meg. Egy sor egy megszakítás nélküli darab, amit egyben végig lehet járni.</p>
     <div class="tablebox"><table id="runs"><thead><tr><th>OKT</th><th>Honnan → hová</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Menetidő</th><th class="r">Pecsét-szakasz</th><th>Leírás</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    </details>
   </section>
 
   <section>
-    <h2>Feltételezések és ellenőrizendők</h2>
+    <details class="fold" id="notesFold">
+    <summary><h2>Feltételezések és ellenőrizendők <span class="fold-meta num">· 8 megjegyzés</span></h2></summary>
+    <div class="fold-body">
     <ul class="notes">
       <li><b>Kész</b> = a bélyegzőhely-szakasz mindkét végén van pecsét (papíron vagy az appban). A dátumok egyezését nem vizsgálja.</li>
       <li><b>Nóri:</b> az 1., 4., 7. és a 18–27. szakasz oldalairól nincs fotó, ezeket pecsét nélkülinek vettük.</li>
@@ -233,6 +255,8 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <li><b>Dénes:</b> a 139–159. sor (Irota → Hollóháza) a papírfüzet alapján kész, a füzetről nincs fotó. A Rakacaszend – Irota szakasz azon múlik, megvan-e a Rakacaszend-pecsét.</li>
       <li><b>Dénes:</b> a többi adat a KÉKTÚRA app bélyegzéslistájából van (2026.11.02.).</li>
     </ul>
+    </div>
+    </details>
   </section>
 
   <footer><button class="edit-link" id="editBtn" type="button">Szerkesztő mód</button> · Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
@@ -323,7 +347,7 @@ function show(i){
 }
 function hl(i){show(i)}
 function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span>'}
-function pick(i,zoom){pinned=i;secSel.value=SEG[i][1];render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
+function pick(i,zoom){pinned=i;secSel.value=SEG[i][1];OPEN.add(SEG[i][1]);render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
 
 // közös hiányok
 const runs=[];let cur=null;
@@ -334,6 +358,7 @@ SEG.forEach((r,i)=>{
 });
 if(cur)runs.push(cur);
 const rb=document.querySelector('#runs tbody');
+document.getElementById('runsMeta').textContent=`· ${runs.length} darab · ${fmtKm(runs.reduce((t,u)=>t+u.rows.reduce((x,r)=>x+r[4],0),0))} km`;
 runs.forEach(u=>{
   const a=u.rows[0],b=u.rows[u.rows.length-1];
   const km=u.rows.reduce((s,r)=>s+r[4],0),up=u.rows.reduce((s,r)=>s+r[5],0),dn=u.rows.reduce((s,r)=>s+r[6],0),mn=u.rows.reduce((s,r)=>s+r[7],0);
@@ -349,7 +374,7 @@ const secSel=document.getElementById('secsel');
 SECS.forEach(([n,name])=>secSel.appendChild(el('option',{value:n},`OKT-${pad(n)} ${name}`)));
 let filt='all';
 document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{filt=b.dataset.f;document.querySelectorAll('#filters .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
-secSel.onchange=()=>{pinned=-1;unhl();render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
+secSel.onchange=()=>{pinned=-1;unhl();if(+secSel.value)OPEN.add(+secSel.value);render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
 const pill=(s,who,note)=>s===1?`<span class="pill p1${who}" title="Kész">✓</span>`:s===2?`<span class="pill p2" title="${note||'Ellenőrizendő'}">?</span>`:`<span class="pill p0" title="Hiányzik">–</span>`;
 function match(r){
   if(filt==='none')return r[8]!==1&&r[9]!==1;
@@ -359,6 +384,7 @@ function match(r){
   if(filt==='chk')return r[8]===2||r[9]===2;
   return true;
 }
+const OPEN=new Set();
 function render(){
   const sv=+secSel.value, tb=document.querySelector('#segs tbody');
   lines.forEach((p,i)=>p.setStyle(styleFor(i,!!sv&&SEG[i][1]!==sv)));
@@ -368,8 +394,13 @@ function render(){
   rows.forEach(([r,i])=>{
     if(r[1]!==last){last=r[1];const s=SECS[r[1]-1];const all=SEG.filter(x=>x[1]===r[1]);const sk=all.reduce((a,x)=>a+x[4],0);
       const d=all.filter(x=>x[8]===1).reduce((a,x)=>a+x[4],0),n=all.filter(x=>x[9]===1).reduce((a,x)=>a+x[4],0);
-      tb.appendChild(el('tr',{class:'sec'},`<td colspan="8">OKT-${pad(s[0])} ${s[1]}<span class="m num">${fmtKm(sk)} km · Dénes ${fmtKm(d)} · Nóri ${fmtKm(n)}</span></td>`))}
+      const open=OPEN.has(r[1]),hits=rows.filter(([x])=>x[1]===r[1]).length,filtered=filt!=='all';
+      const h=el('tr',{class:'sec'+(open?' open':''),tabindex:'0',role:'button','aria-expanded':String(open),title:open?'Becsukás':'Kinyitás: bélyegzőhely-szakaszok'},`<td colspan="8"><span class="car" aria-hidden="true">▸</span>OKT-${pad(s[0])} ${s[1]}<span class="m num">${fmtKm(sk)} km · Dénes ${fmtKm(d)} · Nóri ${fmtKm(n)}${filtered?` · ${hits} találat`:` · ${all.length} pecsét-szakasz`}</span></td>`);
+      const tog=()=>{OPEN.has(r[1])?OPEN.delete(r[1]):OPEN.add(r[1]);render()};
+      h.onclick=tog;h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}};
+      tb.appendChild(h)}
     kmTot+=r[4];
+    if(!OPEN.has(r[1]))return;
     const [a,b]=ptsOf(r[0]);
     const tr=el('tr',{class:'row'+(i===pinned?' on':'')},`<td class="r num">${r[0]}</td><td class="route">${r[2]} → ${r[3]}${r[10]?`<span class="note">${r[10]}</span>`:''}</td><td class="r num">${fmtKm(r[4])}</td><td class="r num">${r[5]} / ${r[6]}</td><td class="r num">${fmtT(r[7])}</td><td>${pill(r[8],'d',r[10])}</td><td>${pill(r[9],'n',r[10])}</td><td>${tpA(r[1])}</td>`);
     tr.onclick=e=>{if(e.target.closest('a'))return;pick(i,true);document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})};
@@ -377,6 +408,9 @@ function render(){
     tb.appendChild(tr);
   });
   document.getElementById('count').textContent=`${rows.length} szakasz · ${fmtKm(kmTot)} km`;
+  const secsShown=[...new Set(rows.map(([r])=>r[1]))],allOpen=secsShown.length&&secsShown.every(x=>OPEN.has(x));
+  const tb2=document.getElementById('toggleAll');tb2.textContent=allOpen?'Mind becsuk':'Mind kinyit';
+  tb2.onclick=()=>{if(allOpen)secsShown.forEach(x=>OPEN.delete(x));else secsShown.forEach(x=>OPEN.add(x));render()};
 }
 render();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{render();if(pinned>=0)show(pinned);if(plan.a>=0&&plan.b>=0)planRender()});
