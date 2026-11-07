@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kéktúra közös napló</title>
+<meta name="description" content="Dénes és Nóri Országos Kéktúra-teljesítése szakaszonként, térképen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap&subset=latin-ext">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --fg:#1a2330; --muted:#5a6573; --line:#d8ddd5;
+  --blue:#1d5aa6; --both:#1d5aa6; --d:#2c8a63; --n:#c46a22; --none:#cfd5cc; --nonemap:#6b7480; --warn:#b3261e; --chip:#e7ece6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#181f27; --fg:#e4e9ee; --muted:#98a3b0; --line:#2b333d;
+  --blue:#6aa3ea; --both:#4f8fdf; --d:#4cbf92; --n:#e6995a; --none:#323b46; --warn:#f08a80; --chip:#222a33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#181f27; --fg:#e4e9ee; --muted:#98a3b0; --line:#2b333d;
+  --blue:#6aa3ea; --both:#4f8fdf; --d:#4cbf92; --n:#e6995a; --none:#323b46; --warn:#f08a80; --chip:#222a33; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 56px;display:flex;flex-direction:column;gap:32px}
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,44px);letter-spacing:.01em}
+h1 .bar{display:inline-block;width:.9em;height:.32em;background:var(--blue);margin-right:.35em;vertical-align:.18em;border-radius:1px}
+h2{font-size:24px}
+.sub{color:var(--muted);margin:6px 0 0}
+.back{font-size:13px;text-decoration:none;color:var(--muted)}
+.back:hover{color:var(--blue)}
+.num{font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{border-top:3px solid var(--k);padding-top:8px}
+.stat .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stat .val{font-family:var(--display);font-size:32px;font-weight:600;line-height:1.1}
+.stat .val small{font-size:16px;color:var(--muted);font-weight:500}
+@media (max-width:560px){.stats{grid-template-columns:1fr}}
+.strip-box{display:flex;flex-direction:column;gap:8px}
+.strip{display:flex;height:30px;border-radius:3px;overflow:hidden;background:var(--none);gap:1px}
+.strip i{display:block;height:100%;cursor:pointer;min-width:1px}
+.strip i:hover{filter:brightness(1.15)}
+.strip i.on{box-shadow:inset 0 0 0 2px var(--fg)}
+.s-both{background:var(--both)} .s-d{background:var(--d)} .s-n{background:var(--n)} .s-none{background:var(--none)}
+.ticks{position:relative;height:16px;font-family:var(--display);font-size:12px;color:var(--muted)}
+.ticks span{position:absolute;top:0;border-left:1px solid var(--line);padding-left:3px;line-height:16px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend b{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+#map{height:min(70vh,620px);min-height:380px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.leaflet-container{font-family:var(--body)}
+.mapy-logo{display:block;line-height:0}
+.mapy-logo img{height:20px;width:auto}
+.readout{font-size:14px;min-height:1.5em}
+.readout .m{color:var(--muted)}
+.cap{font-size:12.5px;color:var(--muted)}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface)}
+td.r,th.r{text-align:right}
+tr.sec td{background:var(--chip);font-family:var(--display);font-size:17px;font-weight:600}
+tr.sec td .m{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:500;margin-left:8px}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--chip)}
+tr.row.on td{background:var(--chip);box-shadow:inset 0 -2px 0 var(--blue)}
+.note{display:block;font-size:12.5px;color:var(--warn);margin-top:2px}
+.pill{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;border-radius:11px;font-size:13px;font-weight:600;padding:0 7px}
+.p1d{background:var(--d);color:#fff} .p1n{background:var(--n);color:#fff}
+.p0{color:var(--muted);border:1px solid var(--line)}
+.p2{color:var(--warn);border:1.5px dashed var(--warn)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:16px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip:focus-visible,select:focus-visible,.strip i:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+select{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:5px 8px;max-width:100%}
+.count{color:var(--muted);font-size:13px;margin-left:auto}
+section{display:flex;flex-direction:column;gap:14px}
+.lead{color:var(--muted);margin:0;max-width:68ch}
+ul.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:75ch}
+.mapy{font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.mapy:hover{text-decoration:underline}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">← confidodev.github.io</a>
+    <h1><span class="bar"></span>Kéktúra közös napló</h1>
+    <p class="sub">Országos Kéktúra · Dénes és Nóri · <span id="hdr"></span></p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="strip-box">
+    <div class="strip" id="strip" role="list" aria-label="A teljes útvonal szakaszonként, Írott-kőtől Hollóházáig"></div>
+    <div class="ticks" id="ticks"></div>
+    <div class="legend">
+      <span><b class="s-both"></b>Mindketten kész</span>
+      <span><b class="s-d"></b>Csak Dénes</span>
+      <span><b class="s-n"></b>Csak Nóri</span>
+      <span><b class="s-none" style="background:var(--nonemap)"></b>Közös hiány</span>
+    </div>
+  </div>
+
+  <section>
+    <div id="map" role="region" aria-label="Térkép az Országos Kéktúra szakaszaival"></div>
+    <div class="readout" id="readout"><span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span></div>
+    <div class="cap">A nyomvonal az OpenStreetMap OKT-útvonalaiból készült, bélyegzőhelyenként felbontva. Néhány helyen eltérhet a hivatalos, aktuális nyomvonaltól.</div>
+  </section>
+
+  <section>
+    <h2>Minden bélyegzőhely-szakasz</h2>
+    <div class="controls" id="filters">
+      <button class="chip" data-f="all" aria-pressed="true">Mind</button>
+      <button class="chip" data-f="none" aria-pressed="false">Közös hiány</button>
+      <button class="chip" data-f="d" aria-pressed="false">Csak Dénesnek kell</button>
+      <button class="chip" data-f="n" aria-pressed="false">Csak Nórinak kell</button>
+      <button class="chip" data-f="both" aria-pressed="false">Mindketten kész</button>
+      <button class="chip" data-f="chk" aria-pressed="false">Ellenőrizendő</button>
+      <label for="secsel" style="position:absolute;left:-9999px">OKT-szakasz</label>
+      <select id="secsel"><option value="0">Összes OKT-szakasz</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="tablebox"><table id="segs"><thead><tr><th class="r">#</th><th>Bélyegzőhely-szakasz</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Menetidő</th><th>Dénes</th><th>Nóri</th><th>Útvonal</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>Közös hiányok összefüggő darabokban</h2>
+    <p class="lead">Ezek a részek egyikőtöknek sincsenek meg. Egy sor egy megszakítás nélküli darab, amit egyben végig lehet járni.</p>
+    <div class="tablebox"><table id="runs"><thead><tr><th>OKT</th><th>Honnan → hová</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Menetidő</th><th class="r">Pecsét-szakasz</th><th>Útvonal</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>Feltételezések és ellenőrizendők</h2>
+    <ul class="notes">
+      <li><b>Kész</b> = a bélyegzőhely-szakasz mindkét végén van pecsét (papíron vagy az appban). A dátumok egyezését nem vizsgálja.</li>
+      <li><b>Nóri:</b> az 1., 4., 7. és a 18–27. szakasz oldalairól nincs fotó, ezeket pecsét nélkülinek vettük.</li>
+      <li><b>Nóri, Tapolca:</b> a dátum be van írva, de pecsét nem látszik. Emiatt a Tapolca – Szent György-hegy szakasz ellenőrizendő.</li>
+      <li><b>Nóri, 2. szakasz:</b> Hosszúpereszteg és Kisvásárhely mezőjén halvány lenyomat látszik, ezt átütésnek vettük, nem pecsétnek.</li>
+      <li><b>Nóri, Julianus-kilátó:</b> újabb bélyegzőhely, a füzetében nincs mezője, nincs meg.</li>
+      <li><b>Nóri:</b> a Badacsony, Nagy-Gete és Csóványos pecsét a margón van, ezeket elfogadottnak vettük.</li>
+      <li><b>Dénes:</b> a 139–159. sor (Irota → Hollóháza) a papírfüzet alapján kész, a füzetről nincs fotó. A Rakacaszend – Irota szakasz azon múlik, megvan-e a Rakacaszend-pecsét.</li>
+      <li><b>Dénes:</b> a többi adat a KÉKTÚRA app bélyegzéslistájából van (2026.11.02.).</li>
+    </ul>
+  </section>
+
+  <footer>Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data.js"></script>
+<script>
+// Ide kerül a Mapy.com API-kulcs (developer.mapy.com). Üresen OpenStreetMap-alaptérkép jelenik meg.
+const MAPY_KEY = 'fJtu9W7W-aMWl7xRgzDunnpZ6TRtC7F6aKxc2sbsR4Q';
+
+const fmtKm=x=>x.toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmtT=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const pad=n=>String(n).padStart(2,'0');
+const cls=r=>r[8]===1&&r[9]===1?'both':r[8]===1?'d':r[9]===1?'n':'none';
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL=()=>({both:css('--both'),d:css('--d'),n:css('--n'),none:css('--nonemap')});
+const total=SEG.reduce((a,r)=>a+r[4],0);
+const sum=f=>SEG.filter(f).reduce((a,r)=>a+r[4],0);
+const el=(t,a={},h='')=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);if(h)e.innerHTML=h;return e};
+const ptsOf=n=>{const a=n<=83?n-1:n;return [a,a+1]};
+// Mapy.com útvonaltervező link: gyalogos turistaút a két bélyegzőhely között
+const mapyUrl=(a,b)=>{const [la,lo]=STAMPS[a],[lb,lob]=STAMPS[b];return `https://mapy.com/fnc/v1/route?mapset=outdoor&start=${lo},${la}&end=${lob},${lb}&routeType=foot_hiking`};
+const mapyA=(a,b)=>`<a class="mapy" href="${mapyUrl(a,b)}" target="_blank" rel="noopener">Mapy ↗</a>`;
+
+document.getElementById('hdr').textContent=`${SEG.length} bélyegzőhely-szakasz, ${fmtKm(total)} km`;
+
+// statisztika
+const dk=sum(r=>r[8]===1), nk=sum(r=>r[9]===1), ck=sum(r=>r[8]!==1&&r[9]!==1);
+document.getElementById('stats').innerHTML=[
+ ['Dénes kész','--d',dk],['Nóri kész','--n',nk],['Közösen hiányzik','--muted',ck]
+].map(([l,k,v])=>`<div class="stat" style="--k:var(${k})"><div class="lbl">${l}</div><div class="val num">${fmtKm(v)} km <small>${Math.round(v/total*100)}%</small></div></div>`).join('');
+
+// térkép
+const map=L.map('map',{zoomSnap:0.25,scrollWheelZoom:true});
+const allBounds=L.latLngBounds(TRACKS.flat());
+map.fitBounds(allBounds,{padding:[16,16]});
+if(MAPY_KEY){
+  L.tileLayer(`https://api.mapy.com/v1/maptiles/outdoor/256/{z}/{x}/{y}?apikey=${MAPY_KEY}`,{
+    minZoom:0,maxZoom:19,attribution:'<a href="https://api.mapy.com/copyright" target="_blank" rel="noopener">&copy; Seznam.cz a.s. és mások</a>'}).addTo(map);
+  const Logo=L.Control.extend({options:{position:'bottomleft'},onAdd(){const d=L.DomUtil.create('div');d.innerHTML='<a class="mapy-logo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a>';L.DomEvent.disableClickPropagation(d);return d}});
+  new Logo().addTo(map);
+}else{
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-közreműködők'}).addTo(map);
+}
+const lines=[],hits=[];
+const order=SEG.map((r,i)=>i).sort((a,b)=>(cls(SEG[a])==='none'?0:1)-(cls(SEG[b])==='none'?0:1));
+const casing=L.layerGroup().addTo(map), segLayer=L.layerGroup().addTo(map), hitLayer=L.layerGroup().addTo(map);
+function styleFor(i,dim){const c=COL()[cls(SEG[i])];return {color:c,weight:cls(SEG[i])==='none'?3.5:5,opacity:dim?0.25:0.95,lineCap:'round',lineJoin:'round'}}
+order.forEach(i=>{
+  L.polyline(TRACKS[i],{color:'#fff',weight:8,opacity:.7,interactive:false}).addTo(casing);
+  lines[i]=L.polyline(TRACKS[i],styleFor(i,false)).addTo(segLayer);
+  const h=L.polyline(TRACKS[i],{color:'#000',opacity:0,weight:18}).addTo(hitLayer);
+  h.on('mouseover',()=>hl(i));h.on('mouseout',unhl);h.on('click',()=>pick(i,false));
+  hits[i]=h;
+});
+const halo=L.polyline(TRACKS[0], {color:css('--fg')||'#000',weight:14,opacity:.2,interactive:false});
+const topLine=L.polyline(TRACKS[0], {weight:7,opacity:1,interactive:false});
+const Reset=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');b.href='#';b.title='Teljes nézet';b.setAttribute('role','button');b.innerHTML='⤢';b.style.cssText='width:30px;height:30px;line-height:30px;text-align:center;font-size:16px;background:#fff;color:#333;text-decoration:none;display:block';L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);map.fitBounds(allBounds,{padding:[16,16]})});return b}});
+new Reset().addTo(map);
+
+// csík
+const strip=document.getElementById('strip'), ticks=document.getElementById('ticks');
+let acc=0; const seen=new Set(); const stripEls=[];
+SEG.forEach((r,i)=>{
+  const s=el('i',{class:'s-'+cls(r),role:'listitem',tabindex:'0',title:`OKT-${pad(r[1])} · ${r[2]} → ${r[3]} · ${fmtKm(r[4])} km`});
+  s.style.flex=r[4]+' 0 0';
+  s.onclick=()=>pick(i,true);
+  s.onkeydown=e=>{if(e.key==='Enter')pick(i,true)};
+  s.addEventListener('mouseenter',()=>hl(i));s.addEventListener('mouseleave',unhl);
+  stripEls.push(s);strip.appendChild(s);
+  if(!seen.has(r[1])&&[1,5,9,12,15,17,20,23,25,27].includes(r[1])){seen.add(r[1]);const t=el('span',{},String(r[1]));t.style.left=(acc/total*100)+'%';ticks.appendChild(t)}
+  acc+=r[4];
+});
+
+// kijelölés
+const ro=document.getElementById('readout');
+const stTxt=s=>s===1?'kész':s===2?'ellenőrizendő':'hiányzik';
+let pinned=-1;
+function show(i){
+  const r=SEG[i];
+  stripEls.forEach(e=>e.classList.remove('on'));stripEls[i].classList.add('on');
+  halo.setLatLngs(TRACKS[i]).addTo(map);topLine.setLatLngs(TRACKS[i]).addTo(map);topLine.setStyle({color:COL()[cls(r)]});
+  const [a,b]=ptsOf(r[0]);
+  ro.innerHTML=`<b>OKT-${pad(r[1])}</b> · ${r[2]} → ${r[3]} <span class="m num">· ${fmtKm(r[4])} km · ↑${r[5]} ↓${r[6]} m · ${fmtT(r[7])}</span> · Dénes: ${stTxt(r[8])} · Nóri: ${stTxt(r[9])} · ${mapyA(a,b)}`;
+}
+function hl(i){show(i)}
+function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span>'}
+function pick(i,zoom){pinned=i;secSel.value=SEG[i][1];render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
+
+// közös hiányok
+const runs=[];let cur=null;
+SEG.forEach((r,i)=>{
+  const gap=r[8]!==1&&r[9]!==1;
+  if(cur&&(r[0]===84||!gap)){runs.push(cur);cur=null}
+  if(gap){if(!cur)cur={rows:[],idx:[]};cur.rows.push(r);cur.idx.push(i)}
+});
+if(cur)runs.push(cur);
+const rb=document.querySelector('#runs tbody');
+runs.forEach(u=>{
+  const a=u.rows[0],b=u.rows[u.rows.length-1];
+  const km=u.rows.reduce((s,r)=>s+r[4],0),up=u.rows.reduce((s,r)=>s+r[5],0),dn=u.rows.reduce((s,r)=>s+r[6],0),mn=u.rows.reduce((s,r)=>s+r[7],0);
+  const chk=u.rows.some(r=>r[8]===2||r[9]===2);
+  const secs=a[1]===b[1]?pad(a[1]):pad(a[1])+'–'+pad(b[1]);
+  const tr=el('tr',{class:'row'},`<td class="num">${secs}</td><td>${a[2]} → ${b[3]}${chk?'<span class="note">Ellenőrizendő szakaszt is tartalmaz</span>':''}</td><td class="r num">${fmtKm(km)}</td><td class="r num">${up} / ${dn}</td><td class="r num">${fmtT(mn)}</td><td class="r num">${u.rows.length}</td><td>${mapyA(ptsOf(a[0])[0],ptsOf(b[0])[1])}</td>`);
+  tr.onclick=e=>{if(e.target.closest('a'))return;const bb=L.latLngBounds(u.idx.flatMap(i=>TRACKS[i]));map.fitBounds(bb,{padding:[40,40]});document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})};
+  rb.appendChild(tr);
+});
+
+// fő táblázat
+const secSel=document.getElementById('secsel');
+SECS.forEach(([n,name])=>secSel.appendChild(el('option',{value:n},`OKT-${pad(n)} ${name}`)));
+let filt='all';
+document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{filt=b.dataset.f;document.querySelectorAll('#filters .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+secSel.onchange=()=>{pinned=-1;unhl();render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
+const pill=(s,who,note)=>s===1?`<span class="pill p1${who}" title="Kész">✓</span>`:s===2?`<span class="pill p2" title="${note||'Ellenőrizendő'}">?</span>`:`<span class="pill p0" title="Hiányzik">–</span>`;
+function match(r){
+  if(filt==='none')return r[8]!==1&&r[9]!==1;
+  if(filt==='d')return r[8]!==1&&r[9]===1;
+  if(filt==='n')return r[9]!==1&&r[8]===1;
+  if(filt==='both')return r[8]===1&&r[9]===1;
+  if(filt==='chk')return r[8]===2||r[9]===2;
+  return true;
+}
+function render(){
+  const sv=+secSel.value, tb=document.querySelector('#segs tbody');
+  lines.forEach((p,i)=>p.setStyle(styleFor(i,!!sv&&SEG[i][1]!==sv)));
+  tb.innerHTML='';
+  const rows=SEG.map((r,i)=>[r,i]).filter(([r])=>(!sv||r[1]===sv)&&match(r));
+  let last=0,kmTot=0;
+  rows.forEach(([r,i])=>{
+    if(r[1]!==last){last=r[1];const s=SECS[r[1]-1];const all=SEG.filter(x=>x[1]===r[1]);const sk=all.reduce((a,x)=>a+x[4],0);
+      const d=all.filter(x=>x[8]===1).reduce((a,x)=>a+x[4],0),n=all.filter(x=>x[9]===1).reduce((a,x)=>a+x[4],0);
+      tb.appendChild(el('tr',{class:'sec'},`<td colspan="8">OKT-${pad(s[0])} ${s[1]}<span class="m num">${fmtKm(sk)} km · Dénes ${fmtKm(d)} · Nóri ${fmtKm(n)}</span></td>`))}
+    kmTot+=r[4];
+    const [a,b]=ptsOf(r[0]);
+    const tr=el('tr',{class:'row'+(i===pinned?' on':'')},`<td class="r num">${r[0]}</td><td class="route">${r[2]} → ${r[3]}${r[10]?`<span class="note">${r[10]}</span>`:''}</td><td class="r num">${fmtKm(r[4])}</td><td class="r num">${r[5]} / ${r[6]}</td><td class="r num">${fmtT(r[7])}</td><td>${pill(r[8],'d',r[10])}</td><td>${pill(r[9],'n',r[10])}</td><td>${mapyA(a,b)}</td>`);
+    tr.onclick=e=>{if(e.target.closest('a'))return;pick(i,true);document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})};
+    tr.onmouseenter=()=>hl(i);tr.onmouseleave=unhl;
+    tb.appendChild(tr);
+  });
+  document.getElementById('count').textContent=`${rows.length} szakasz · ${fmtKm(kmTot)} km`;
+}
+render();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{render();if(pinned>=0)show(pinned)});
+</script>
+</body>
+</html>
