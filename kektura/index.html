@@ -55,6 +55,10 @@ h2{font-size:24px}
 #map{height:min(70vh,620px);min-height:380px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .leaflet-container{font-family:var(--body)}
 .mapy-logo{display:block;line-height:0}
+.clean-btn{display:flex!important;align-items:center;gap:6px;padding:0 12px;height:34px;background:#fff;color:#1a2330!important;font:600 14px/1 var(--body);text-decoration:none!important;white-space:nowrap}
+.clean-btn span{font-size:17px}
+.clean-btn:hover{background:#f4f4f4}
+.clean-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .mapy-logo img{height:20px;width:auto}
 .readout{font-size:14px;min-height:1.5em}
 .readout .m{color:var(--muted)}
@@ -289,6 +293,9 @@ const halo=L.polyline(TRACKS[0], {color:css('--fg')||'#000',weight:14,opacity:.2
 const topLine=L.polyline(TRACKS[0], {weight:7,opacity:1,interactive:false});
 const Reset=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');b.href='#';b.title='Teljes nézet';b.setAttribute('role','button');b.innerHTML='⤢';b.style.cssText='width:30px;height:30px;line-height:30px;text-align:center;font-size:16px;background:#fff;color:#333;text-decoration:none;display:block';L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);map.fitBounds(allBounds,{padding:[16,16]})});return b}});
 new Reset().addTo(map);
+// Tiszta lap: az oldal újratöltése kijelölések, szűrők és tervezett útvonal nélkül
+const Clean=L.Control.extend({options:{position:'topright'},onAdd(){const a=L.DomUtil.create('a','clean-btn leaflet-bar');a.href='./';a.title='Kijelölések törlése, tiszta lap';a.innerHTML='<span aria-hidden="true">⟲</span> Tiszta lap';L.DomEvent.disableClickPropagation(a);L.DomEvent.on(a,'click',e=>{L.DomEvent.preventDefault(e);try{history.scrollRestoration='manual'}catch(_){}window.scrollTo(0,0);location.replace(location.pathname)});return a}});
+new Clean().addTo(map);
 
 // csík
 const strip=document.getElementById('strip'), ticks=document.getElementById('ticks');
