@@ -127,6 +127,33 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
 .btn:hover{border-color:var(--blue)}
 .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .plan-note{font-size:12.5px;color:var(--muted);margin:0}
+.plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.plan-head>div:first-child{min-width:0;flex:1}
+.plan-card .kicker{overflow-wrap:anywhere}
+.stars{display:flex;gap:6px;flex-shrink:0}
+.star{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.star svg{width:24px;height:24px}
+.star path{fill:none;stroke:var(--sc);stroke-width:1.8;stroke-linejoin:round}
+.star[aria-pressed="true"] path{fill:var(--sc)}
+.star[aria-pressed="true"]{border-color:var(--sc)}
+.star:hover{border-color:var(--sc)}
+.star:focus-visible{outline:2px solid var(--sc);outline-offset:2px}
+.star.run{--sc:var(--d)} .star.nori{--sc:var(--n)}
+.star[disabled]{cursor:default;opacity:.85}
+.star.busy{opacity:.5;cursor:progress}
+.starred{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.starred{grid-template-columns:1fr}}
+.sgroup{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--sc);border-radius:8px;padding:12px 14px}
+.sgroup.run{--sc:var(--d)} .sgroup.nori{--sc:var(--n)}
+.sgroup h3{font-family:var(--display);font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.sgroup h3 .si{color:var(--sc)}
+.sgroup ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sgroup li button{font:inherit;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--fg);display:flex;justify-content:space-between;gap:10px}
+.sgroup li button:hover,.sgroup li button.on{background:var(--chip)}
+.sgroup li button small{color:var(--muted);white-space:nowrap}
+.sgroup .empty{color:var(--muted);font-size:14px;padding:4px 8px}
+.edit-link{font:inherit;font-size:13px;background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:2000;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
 </style>
 </head>
 <body>
@@ -165,6 +192,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <div class="combo" id="cTo"><label for="cToIn">Hová</label><input id="cToIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cToList" autocomplete="off" placeholder="pl. Piliscsaba"><ul id="cToList" role="listbox" hidden></ul></div>
     </div>
     <div id="planOut"></div>
+    <div class="starred" id="starred" aria-live="polite"></div>
   </section>
 
   <section>
@@ -203,7 +231,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
     </ul>
   </section>
 
-  <footer>Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
+  <footer><button class="edit-link" id="editBtn" type="button">Szerkesztő mód</button> · Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -417,7 +445,7 @@ function planRender(){
   const pct=g=>g.toLocaleString('hu-HU',{maximumFractionDigits:1})+'%';
   const tpLinks=secs.map(s=>`<a class="btn" href="${tpUrl(s)}" target="_blank" rel="noopener">↗ OKT-${pad(s)} leírás</a>`).join('');
   out.innerHTML=`<div class="plan-card">
-    <div><div class="kicker">${secs.map(s=>'OKT-'+pad(s)).join(' · ')} · ${rows.length} bélyegzőhely-szakasz</div><h3>${esc(NAMES[plan.a])} → ${esc(NAMES[plan.b])}</h3></div>
+    <div class="plan-head"><div><div class="kicker">${secs.map(s=>'OKT-'+pad(s)).join(' · ')} · ${rows.length} bélyegzőhely-szakasz</div><h3>${esc(NAMES[plan.a])} → ${esc(NAMES[plan.b])}</h3></div>${starBtns()}</div>
     <div class="tiles">
       <div class="tile"><div class="v">${fmtKm(km)} km</div><div class="l">táv</div></div>
       <div class="tile"><div class="v">${fmtT(mn)}</div><div class="l">menetidő</div></div>
@@ -439,6 +467,7 @@ function planRender(){
     <div class="btns"><button class="btn primary" id="planShow" type="button">Mutasd a térképen</button>${tpLinks}</div>
     <p class="plan-note">${rev?'Fordított irány: az emelkedés és a lejtés felcserélve, a menetidő a hivatalos (ellenkező irányú) érték. ':''}${ferry?'Az útvonal tartalmazza a Visegrád–Nagymaros kompátkelést. ':''}${hasE?'Magasság, max. emelkedő és lejtő: EU-DEM 25 m-es domborzati modellből, legalább 20 m szintkülönbségű szakaszon, becslés. ':''}Táv, szint és menetidő: MTSZ szakaszadatok.</p>
   </div>`;
+  wireStars();markStarred();
   // térkép
   const latlngs=idx.map(i=>rev?[...TRACKS[i]].reverse():TRACKS[i]);
   L.polyline(latlngs,{color:'#fff',weight:12,opacity:.8,interactive:false}).addTo(planLayer);
@@ -471,6 +500,78 @@ function planRender(){
   svg.addEventListener('pointermove',e=>at(e.clientX));svg.addEventListener('pointerdown',e=>at(e.clientX));
   svg.addEventListener('pointerleave',()=>{cur.setAttribute('visibility','hidden');curMark.remove();pinfo.textContent='Vidd az egeret a szintprofilra: a térképen is mutatja a pontot.'});
 }
+// ===== Csillagozott útvonalak (plans.json a repóban) =====
+const REPO='confidodev/confidodev.github.io', PLANS_PATH='kektura/plans.json';
+const KINDS={run:{label:'Futva tervezem',title:'Futva tervezem (zöld csillag)'},nori:{label:'Nórival közösen',title:'Nórival közösen (narancs csillag)'}};
+let PLANS=[];
+const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>';
+const getTok=()=>{try{return localStorage.getItem('kt_gh_token')||''}catch(e){return ''}};
+const setTok=t=>{try{t?localStorage.setItem('kt_gh_token',t):localStorage.removeItem('kt_gh_token')}catch(e){}};
+const isEditor=()=>!!getTok();
+function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500)}
+const has=(a,b,k)=>PLANS.some(p=>p.a===a&&p.b===b&&p.k===k);
+function starBtns(){const ed=isEditor();return `<div class="stars">${Object.keys(KINDS).map(k=>`<button class="star ${k}" type="button" data-k="${k}" aria-pressed="${has(plan.a,plan.b,k)}" title="${KINDS[k].title}${ed?'':' – csak szerkesztő módban állítható'}" aria-label="${KINDS[k].title}">${STAR}</button>`).join('')}</div>`}
+function wireStars(){document.querySelectorAll('#planOut .star').forEach(b=>b.onclick=()=>toggleStar(b.dataset.k,b))}
+const b64=s=>btoa(unescape(encodeURIComponent(s)));
+const unb64=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
+async function ghGet(){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${PLANS_PATH}?ref=main&t=${Date.now()}`,{headers:{Authorization:'Bearer '+getTok(),Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(r.status===401||r.status===403)throw new Error('auth');
+  if(!r.ok)throw new Error('get '+r.status);
+  const j=await r.json();return {sha:j.sha,data:JSON.parse(unb64(j.content)||'[]')};
+}
+async function ghPut(data,sha,msg){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${PLANS_PATH}`,{method:'PUT',headers:{Authorization:'Bearer '+getTok(),Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({message:msg,content:b64(JSON.stringify(data,null,1)+'\n'),sha,branch:'main'})});
+  if(r.status===401||r.status===403)throw new Error('auth');
+  if(r.status===409)throw new Error('conflict');
+  if(!r.ok)throw new Error('put '+r.status);
+}
+async function toggleStar(k,btn){
+  if(!isEditor()){toast('Csillagozni szerkesztő módban lehet (az oldal alján).');return}
+  if(btn.classList.contains('busy'))return;
+  const a=plan.a,b=plan.b,on=!has(a,b,k);
+  btn.classList.add('busy');
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const {sha,data}=await ghGet();
+      let next=data.filter(p=>!(p.a===a&&p.b===b&&p.k===k));
+      if(on)next.push({a,b,k,d:new Date().toISOString().slice(0,10)});
+      await ghPut(next,sha,`${on?'Csillag':'Csillag törlése'} (${KINDS[k].label}): ${NAMES[a]} → ${NAMES[b]}`);
+      PLANS=next;btn.setAttribute('aria-pressed',String(on));renderStarred();
+      toast(on?`Elmentve: ${KINDS[k].label}`:'Csillag törölve');break;
+    }catch(e){
+      if(e.message==='conflict'&&attempt===0)continue;
+      toast(e.message==='auth'?'A GitHub-kulcs nem érvényes. Állítsd be újra a szerkesztő módot.':'Nem sikerült menteni, próbáld újra.');break;
+    }
+  }
+  btn.classList.remove('busy');
+}
+function markStarred(){document.querySelectorAll('#starred li button').forEach(x=>x.classList.toggle('on',+x.dataset.a===plan.a&&+x.dataset.b===plan.b))}
+function renderStarred(){
+  const box=document.getElementById('starred');
+  box.innerHTML=Object.keys(KINDS).map(k=>{
+    const list=PLANS.filter(p=>p.k===k&&NAMES[p.a]!=null&&NAMES[p.b]!=null);
+    const items=list.map(p=>{const lo=Math.min(p.a,p.b),hi=Math.max(p.a,p.b);const kmv=SEG.filter(r=>{const [x,y]=ptsOf(r[0]);return x>=lo&&y<=hi}).reduce((s,r)=>s+r[4],0);
+      return `<li><button type="button" data-a="${p.a}" data-b="${p.b}">${esc(NAMES[p.a])} → ${esc(NAMES[p.b])}<small>${fmtKm(kmv)} km</small></button></li>`}).join('');
+    return `<div class="sgroup ${k}"><h3><span class="si">★</span>${KINDS[k].label}</h3>${items?`<ul>${items}</ul>`:'<div class="empty">Még nincs csillagozott útvonal.</div>'}</div>`}).join('');
+  box.querySelectorAll('li button').forEach(x=>x.onclick=()=>{cFrom.set(+x.dataset.a);cTo.set(+x.dataset.b);planRender();document.getElementById('planOut').scrollIntoView({behavior:'smooth',block:'start'})});
+  markStarred();
+}
+async function loadPlans(){
+  try{
+    if(isEditor()){PLANS=(await ghGet()).data}
+    else{const r=await fetch('plans.json?t='+Date.now(),{cache:'no-store'});PLANS=r.ok?await r.json():[]}
+  }catch(e){try{const r=await fetch('plans.json?t='+Date.now(),{cache:'no-store'});PLANS=r.ok?await r.json():[]}catch(_){PLANS=[]}}
+  renderStarred();if(plan.a>=0&&plan.b>=0)planRender();
+}
+function updEditBtn(){document.getElementById('editBtn').textContent=isEditor()?'Szerkesztő mód: bekapcsolva (kilépés)':'Szerkesztő mód'}
+document.getElementById('editBtn').onclick=()=>{
+  if(isEditor()){if(confirm('Kilépsz a szerkesztő módból ezen az eszközön?')){setTok('');updEditBtn();loadPlans()}return}
+  const t=prompt('Szerkesztő mód: illeszd be a GitHub-kulcsodat (token). Csak ezen az eszközön tárolódik.');
+  if(t&&t.trim()){setTok(t.trim());updEditBtn();loadPlans().then(()=>toast('Szerkesztő mód bekapcsolva'))}
+};
+updEditBtn();renderStarred();loadPlans();
+
 // megosztható link: #ut=12-30
 (function(){const m=location.hash.match(/ut=(\d+)-(\d+)/);if(m){const a=+m[1]-1,b=+m[2]-1;if(NAMES[a]!=null&&NAMES[b]!=null){cFrom.set(a);cTo.set(b);planRender()}}})();
 </script>
