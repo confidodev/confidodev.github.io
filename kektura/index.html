@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kéktúra közös napló</title>
+<title>Kéktúra közös tervező</title>
 <meta name="description" content="Dénes és Nóri Országos Kéktúra-teljesítése szakaszonként, térképen.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -179,10 +179,13 @@ details.fold>summary h2{display:inline}
 <div class="wrap">
   <header>
     <a class="back" href="../">← confidodev.github.io</a>
-    <h1><span class="bar"></span>Kéktúra közös napló</h1>
+    <h1><span class="bar"></span>Kéktúra közös tervező</h1>
     <p class="sub">Országos Kéktúra · Dénes és Nóri · <span id="hdr"></span></p>
   </header>
 
+  <details class="fold" id="sumFold" open>
+  <summary><h2>Összesítés <span class="fold-meta num" id="sumMeta"></span></h2></summary>
+  <div class="fold-body">
   <div class="stats" id="stats"></div>
 
   <div class="strip-box">
@@ -195,6 +198,8 @@ details.fold>summary h2{display:inline}
       <span><b class="s-none" style="background:var(--nonemap)"></b>Közös hiány</span>
     </div>
   </div>
+  </div>
+  </details>
 
   <section>
     <div id="map" role="region" aria-label="Térkép az Országos Kéktúra szakaszaival"></div>
@@ -286,6 +291,7 @@ document.getElementById('hdr').textContent=`${SEG.length} bélyegzőhely-szakasz
 
 // statisztika
 const dk=sum(r=>r[8]===1), nk=sum(r=>r[9]===1), ck=sum(r=>r[8]!==1&&r[9]!==1);
+document.getElementById('sumMeta').textContent=`· Dénes ${Math.round(dk/total*100)}% · Nóri ${Math.round(nk/total*100)}% · közös hiány ${Math.round(ck/total*100)}%`;
 document.getElementById('stats').innerHTML=[
  ['Dénes kész','--d',dk],['Nóri kész','--n',nk],['Közösen hiányzik','--muted',ck]
 ].map(([l,k,v])=>`<div class="stat" style="--k:var(${k})"><div class="lbl">${l}</div><div class="val num">${fmtKm(v)} km <small>${Math.round(v/total*100)}%</small></div></div>`).join('');
