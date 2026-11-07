@@ -203,7 +203,7 @@ details.fold>summary h2{display:inline}
 
   <section>
     <div id="map" role="region" aria-label="Térkép az Országos Kéktúra szakaszaival"></div>
-    <div class="readout" id="readout"><span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span></div>
+    <div class="readout" id="readout"><span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: az adatai lent, az „Útvonal két pont között” blokkban jelennek meg.</span></div>
     <div class="cap">A nyomvonal az OpenStreetMap OKT-útvonalaiból készült, bélyegzőhelyenként felbontva. Néhány helyen eltérhet a hivatalos, aktuális nyomvonaltól.</div>
   </section>
 
@@ -324,7 +324,7 @@ order.forEach(i=>{
   L.polyline(TRACKS[i],{color:'#fff',weight:8,opacity:.7,interactive:false}).addTo(casing);
   lines[i]=L.polyline(TRACKS[i],styleFor(i,false)).addTo(segLayer);
   const h=L.polyline(TRACKS[i],{color:'#000',opacity:0,weight:18}).addTo(hitLayer);
-  h.on('mouseover',()=>hl(i));h.on('mouseout',unhl);h.on('click',()=>pick(i,false));
+  h.on('mouseover',()=>hl(i));h.on('mouseout',unhl);h.on('click',()=>mapPick(i));
   hits[i]=h;
 });
 const halo=L.polyline(TRACKS[0], {color:css('--fg')||'#000',weight:14,opacity:.2,interactive:false});
@@ -360,7 +360,9 @@ function show(i){
   ro.innerHTML=`<b>OKT-${pad(r[1])}</b> · ${r[2]} → ${r[3]} <span class="m num">· ${fmtKm(r[4])} km · ↑${r[5]} ↓${r[6]} m · ${fmtT(r[7])}</span> · Dénes: ${stTxt(r[8])} · Nóri: ${stTxt(r[9])} · ${tpA(r[1])}`;
 }
 function hl(i){show(i)}
-function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span>'}
+function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: az adatai lent, az „Útvonal két pont között” blokkban jelennek meg.</span>'}
+// térképes kattintás: a szakasz adatai az útvonaltervezőbe kerülnek
+function mapPick(i){pinned=i;show(i);const [a,b]=ptsOf(SEG[i][0]);cFrom.set(a);cTo.set(b);planRender()}
 function pick(i,zoom){pinned=i;document.getElementById('segFold').open=true;secSel.value=SEG[i][1];OPEN.add(SEG[i][1]);render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
 
 // közös hiányok
