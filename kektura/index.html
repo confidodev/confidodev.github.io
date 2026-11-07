@@ -208,7 +208,9 @@ details.fold>summary h2{display:inline}
   </section>
 
   <section id="tervezo">
-    <h2>Útvonal két pont között</h2>
+    <details class="fold" id="planFold">
+    <summary><h2>Útvonal két pont között <span class="fold-meta num" id="planMeta"></span></h2></summary>
+    <div class="fold-body">
     <p class="lead">Válassz két bélyegzőhelyet: kiírja a köztük lévő távot, szintet, menetidőt és a szintprofilt, és megmutatja a térképen. Elég elkezdeni gépelni a nevet.</p>
     <div class="plan-pick">
       <div class="combo" id="cFrom"><label for="cFromIn">Honnan</label><input id="cFromIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cFromList" autocomplete="off" placeholder="pl. Dorog"><ul id="cFromList" role="listbox" hidden></ul></div>
@@ -217,10 +219,14 @@ details.fold>summary h2{display:inline}
     </div>
     <div id="planOut"></div>
     <div class="starred" id="starred" aria-live="polite"></div>
+    </div>
+    </details>
   </section>
 
   <section>
-    <h2>Minden bélyegzőhely-szakasz</h2>
+    <details class="fold" id="segFold">
+    <summary><h2>Minden bélyegzőhely-szakasz <span class="fold-meta num" id="segMeta"></span></h2></summary>
+    <div class="fold-body">
     <div class="controls" id="filters">
       <button class="chip" data-f="all" aria-pressed="true">Mind</button>
       <button class="chip" data-f="none" aria-pressed="false">Közös hiány</button>
@@ -234,6 +240,8 @@ details.fold>summary h2{display:inline}
       <button class="chip" id="toggleAll" type="button">Mind kinyit</button>
     </div>
     <div class="tablebox"><table id="segs"><thead><tr><th class="r">#</th><th>Bélyegzőhely-szakasz</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Menetidő</th><th>Dénes</th><th>Nóri</th><th>Leírás</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    </details>
   </section>
 
   <section>
@@ -353,7 +361,7 @@ function show(i){
 }
 function hl(i){show(i)}
 function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: kijelöli, és a táblázat arra az OKT-szakaszra szűr.</span>'}
-function pick(i,zoom){pinned=i;secSel.value=SEG[i][1];OPEN.add(SEG[i][1]);render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
+function pick(i,zoom){pinned=i;document.getElementById('segFold').open=true;secSel.value=SEG[i][1];OPEN.add(SEG[i][1]);render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
 
 // közös hiányok
 const runs=[];let cur=null;
@@ -380,7 +388,7 @@ const secSel=document.getElementById('secsel');
 SECS.forEach(([n,name])=>secSel.appendChild(el('option',{value:n},`OKT-${pad(n)} ${name}`)));
 let filt='all';
 document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{filt=b.dataset.f;document.querySelectorAll('#filters .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
-secSel.onchange=()=>{pinned=-1;unhl();if(+secSel.value)OPEN.add(+secSel.value);render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
+secSel.onchange=()=>{document.getElementById('segFold').open=true;pinned=-1;unhl();if(+secSel.value)OPEN.add(+secSel.value);render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
 const pill=(s,who,note)=>s===1?`<span class="pill p1${who}" title="Kész">✓</span>`:s===2?`<span class="pill p2" title="${note||'Ellenőrizendő'}">?</span>`:`<span class="pill p0" title="Hiányzik">–</span>`;
 function match(r){
   if(filt==='none')return r[8]!==1&&r[9]!==1;
@@ -414,6 +422,7 @@ function render(){
     tb.appendChild(tr);
   });
   document.getElementById('count').textContent=`${rows.length} szakasz · ${fmtKm(kmTot)} km`;
+  document.getElementById('segMeta').textContent=`· ${SECS.length} OKT-szakasz · ${SEG.length} pecsét-szakasz`;
   const secsShown=[...new Set(rows.map(([r])=>r[1]))],allOpen=secsShown.length&&secsShown.every(x=>OPEN.has(x));
   const tb2=document.getElementById('toggleAll');tb2.textContent=allOpen?'Mind becsuk':'Mind kinyit';
   tb2.onclick=()=>{if(allOpen)secsShown.forEach(x=>OPEN.delete(x));else secsShown.forEach(x=>OPEN.add(x));render()};
@@ -464,6 +473,7 @@ const planLayer=L.layerGroup().addTo(map);
 const curMark=L.circleMarker([0,0],{radius:7,color:'#fff',weight:2,fillColor:'#1d5aa6',fillOpacity:1,interactive:false});
 
 function planRender(){
+  if(plan.a>=0&&plan.b>=0)document.getElementById('planFold').open=true;
   const out=document.getElementById('planOut');
   planLayer.clearLayers();curMark.remove();
   if(plan.a<0||plan.b<0){out.innerHTML='';return}
@@ -595,6 +605,7 @@ async function toggleStar(k,btn){
 }
 function markStarred(){document.querySelectorAll('#starred li button').forEach(x=>x.classList.toggle('on',+x.dataset.a===plan.a&&+x.dataset.b===plan.b))}
 function renderStarred(){
+  const ns=PLANS.length;document.getElementById('planMeta').textContent=ns?`· ${ns} csillagozott útvonal`:'';
   const box=document.getElementById('starred');
   box.innerHTML=Object.keys(KINDS).map(k=>{
     const list=PLANS.filter(p=>p.k===k&&NAMES[p.a]!=null&&NAMES[p.b]!=null);
