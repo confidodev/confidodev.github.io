@@ -86,6 +86,47 @@ ul.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;m
 .mapy{font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
 .mapy:hover{text-decoration:underline}
 footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+/* két pont közötti tervező */
+.plan-pick{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+@media (max-width:640px){.plan-pick{grid-template-columns:1fr}.swap{justify-self:center;transform:rotate(90deg)}}
+.combo{position:relative;display:flex;flex-direction:column;gap:4px}
+.combo label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.combo input{font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);width:100%}
+.combo input:focus{outline:2px solid var(--blue);outline-offset:1px}
+.combo ul{position:absolute;top:100%;left:0;right:0;z-index:1000;margin:4px 0 0;padding:4px;list-style:none;max-height:300px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.combo li{padding:7px 10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.combo li small{color:var(--muted);white-space:nowrap}
+.combo li[aria-selected="true"],.combo li:hover{background:var(--chip)}
+.combo li.empty{color:var(--muted);cursor:default}
+.swap{font:inherit;font-size:18px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.swap:hover{border-color:var(--blue)}
+.swap:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.plan-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.plan-card .kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);font-weight:600}
+.plan-card h3{font-family:var(--display);font-size:clamp(24px,4vw,32px);font-weight:700;margin:2px 0 0;line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tiles.small .tile .v{font-size:20px}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--chip);border-radius:10px;padding:10px 12px}
+.tile .v{white-space:nowrap;font-family:var(--display);font-size:clamp(20px,5vw,28px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile.lo .v{color:var(--d)} .tile.hi .v{color:var(--n)} .tile.up .v{color:var(--warn)} .tile.dn .v{color:var(--blue)}
+.who{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.who b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.profile{width:100%;height:auto;display:block;touch-action:pan-y}
+.profile .area{fill:var(--blue);fill-opacity:.15}
+.profile .ln{fill:none;stroke:var(--blue);stroke-width:2;vector-effect:non-scaling-stroke}
+.profile .grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.profile text{font-size:11px;fill:var(--muted);font-family:var(--body)}
+.profile .cur{stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
+.pstrip{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:1px;margin-top:4px}
+.pinfo{font-size:13px;color:var(--muted);min-height:1.4em}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn:hover{border-color:var(--blue)}
+.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.plan-note{font-size:12.5px;color:var(--muted);margin:0}
 </style>
 </head>
 <body>
@@ -151,11 +192,22 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
     </ul>
   </section>
 
+  <section id="tervezo">
+    <h2>Útvonal két pont között</h2>
+    <p class="lead">Válassz két bélyegzőhelyet: kiírja a köztük lévő távot, szintet, menetidőt és a szintprofilt, és megmutatja a térképen. Elég elkezdeni gépelni a nevet.</p>
+    <div class="plan-pick">
+      <div class="combo" id="cFrom"><label for="cFromIn">Honnan</label><input id="cFromIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cFromList" autocomplete="off" placeholder="pl. Dorog"><ul id="cFromList" role="listbox" hidden></ul></div>
+      <button class="swap" id="swap" type="button" title="Irány megfordítása" aria-label="Irány megfordítása">⇄</button>
+      <div class="combo" id="cTo"><label for="cToIn">Hová</label><input id="cToIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cToList" autocomplete="off" placeholder="pl. Piliscsaba"><ul id="cToList" role="listbox" hidden></ul></div>
+    </div>
+    <div id="planOut"></div>
+  </section>
+
   <footer>Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="data.js"></script>
+<script src="data.js?v=2"></script>
 <script>
 // Ide kerül a Mapy.com API-kulcs (developer.mapy.com). Üresen OpenStreetMap-alaptérkép jelenik meg.
 const MAPY_KEY = 'fJtu9W7W-aMWl7xRgzDunnpZ6TRtC7F6aKxc2sbsR4Q';
@@ -292,7 +344,135 @@ function render(){
   document.getElementById('count').textContent=`${rows.length} szakasz · ${fmtKm(kmTot)} km`;
 }
 render();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{render();if(pinned>=0)show(pinned)});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{render();if(pinned>=0)show(pinned);if(plan.a>=0&&plan.b>=0)planRender()});
+
+// ===== Útvonal két pont között =====
+const NAMES=[],STSEC=[];
+SEG.forEach(r=>{const [a,b]=ptsOf(r[0]);if(NAMES[a]==null){NAMES[a]=r[2];STSEC[a]=r[1]}if(NAMES[b]==null){NAMES[b]=r[3];STSEC[b]=r[1]}});
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const NN=NAMES.map(norm);
+const plan={a:-1,b:-1};
+const hav=(p,q)=>{const R=6371000,r=Math.PI/180,dp=(q[0]-p[0])*r,dl=(q[1]-p[1])*r,h=Math.sin(dp/2)**2+Math.cos(p[0]*r)*Math.cos(q[0]*r)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function makeCombo(rootId,key){
+  const root=document.getElementById(rootId),inp=root.querySelector('input'),ul=root.querySelector('ul');
+  let items=[],act=-1;
+  const open=()=>{ul.hidden=false;inp.setAttribute('aria-expanded','true')};
+  const close=()=>{ul.hidden=true;inp.setAttribute('aria-expanded','false');act=-1};
+  function fill(){
+    const q=norm(inp.value.trim());
+    items=NAMES.map((n,i)=>i).filter(i=>!q||NN[i].includes(q));
+    items.sort((x,y)=>(q&&NN[x].startsWith(q)?0:1)-(q&&NN[y].startsWith(q)?0:1)||x-y);
+    act=items.length?0:-1;
+    ul.innerHTML=items.length?items.map((i,k)=>`<li role="option" id="${rootId}-o${i}" data-i="${i}" aria-selected="${k===act}">${esc(NAMES[i])}<small>OKT-${pad(STSEC[i])} · ${i+1}.</small></li>`).join(''):'<li class="empty">Nincs ilyen bélyegzőhely</li>';
+    if(act>=0)inp.setAttribute('aria-activedescendant',`${rootId}-o${items[act]}`);
+  }
+  function mark(){[...ul.children].forEach((li,k)=>li.setAttribute('aria-selected',k===act));const li=ul.children[act];if(li){li.scrollIntoView({block:'nearest'});inp.setAttribute('aria-activedescendant',li.id)}}
+  function choose(i){plan[key]=i;inp.value=NAMES[i];close();planRender()}
+  inp.addEventListener('focus',()=>{inp.select();fill();open()});
+  inp.addEventListener('input',()=>{fill();open()});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();if(ul.hidden){fill();open()}else if(act<items.length-1){act++;mark()}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(act>0){act--;mark()}}
+    else if(e.key==='Enter'){if(!ul.hidden&&act>=0){e.preventDefault();choose(items[act])}}
+    else if(e.key==='Escape'){close();if(plan[key]>=0)inp.value=NAMES[plan[key]]}
+  });
+  ul.addEventListener('mousedown',e=>{const li=e.target.closest('li[data-i]');if(li){e.preventDefault();choose(+li.dataset.i)}});
+  inp.addEventListener('blur',()=>{setTimeout(()=>{close();inp.value=plan[key]>=0?NAMES[plan[key]]:''},120)});
+  return {set(i){plan[key]=i;inp.value=i>=0?NAMES[i]:''}};
+}
+const cFrom=makeCombo('cFrom','a'),cTo=makeCombo('cTo','b');
+document.getElementById('swap').onclick=()=>{const a=plan.a,b=plan.b;cFrom.set(b);cTo.set(a);planRender()};
+
+const planLayer=L.layerGroup().addTo(map);
+const curMark=L.circleMarker([0,0],{radius:7,color:'#fff',weight:2,fillColor:'#1d5aa6',fillOpacity:1,interactive:false});
+
+function planRender(){
+  const out=document.getElementById('planOut');
+  planLayer.clearLayers();curMark.remove();
+  if(plan.a<0||plan.b<0){out.innerHTML='';return}
+  try{history.replaceState(null,'',`#ut=${plan.a+1}-${plan.b+1}`)}catch(e){}
+  if(plan.a===plan.b){out.innerHTML='<p class="plan-note">A két pont ugyanaz, válassz egy másikat.</p>';return}
+  const rev=plan.a>plan.b,lo=Math.min(plan.a,plan.b),hi=Math.max(plan.a,plan.b);
+  let idx=SEG.map((r,i)=>i).filter(i=>{const [p,q]=ptsOf(SEG[i][0]);return p>=lo&&q<=hi});
+  if(rev)idx=idx.reverse();
+  const rows=idx.map(i=>SEG[i]);
+  const km=rows.reduce((s,r)=>s+r[4],0),mn=rows.reduce((s,r)=>s+r[7],0);
+  let up=rows.reduce((s,r)=>s+r[5],0),dn=rows.reduce((s,r)=>s+r[6],0);if(rev)[up,dn]=[dn,up];
+  const dk=rows.filter(r=>r[8]===1).reduce((s,r)=>s+r[4],0),nk=rows.filter(r=>r[9]===1).reduce((s,r)=>s+r[4],0),ck=rows.filter(r=>r[8]!==1&&r[9]!==1).reduce((s,r)=>s+r[4],0);
+  const secs=[...new Set(rows.map(r=>r[1]))];
+  const ferry=lo<=83&&hi>=84;
+  // profil
+  const pts=[],el=[],segOf=[];
+  idx.forEach(i=>{let t=TRACKS[i],e=(typeof ELEV!=='undefined')?ELEV[i]:null;if(rev){t=[...t].reverse();e=e&&[...e].reverse()}t.forEach((p,k)=>{pts.push(p);el.push(e?e[k]:null);segOf.push(i)})});
+  const dist=[0];for(let k=1;k<pts.length;k++)dist.push(dist[k-1]+(segOf[k]===segOf[k-1]?hav(pts[k-1],pts[k]):0));
+  const scale=dist[dist.length-1]>0?km/(dist[dist.length-1]/1000):1;
+  const dkm=dist.map(d=>d/1000*scale);
+  const hasE=el.every(v=>v!=null);
+  let emin=0,emax=0,gUp=0,gDn=0;
+  if(hasE){emin=Math.min(...el);emax=Math.max(...el);
+    for(let i=0;i<el.length;i++){for(let j=i+1;j<el.length&&dist[j]-dist[i]<2000;j++){const dz=el[j]-el[i];if(Math.abs(dz)>=20){const dd=dist[j]-dist[i];if(dd>=60){const g=dz/dd*100;if(g>gUp)gUp=g;if(-g>gDn)gDn=-g}break}}}}
+  const f0=n=>Math.round(n).toLocaleString('hu-HU');
+  const pct=g=>g.toLocaleString('hu-HU',{maximumFractionDigits:1})+'%';
+  const tpLinks=secs.map(s=>`<a class="btn" href="${tpUrl(s)}" target="_blank" rel="noopener">↗ OKT-${pad(s)} leírás</a>`).join('');
+  out.innerHTML=`<div class="plan-card">
+    <div><div class="kicker">${secs.map(s=>'OKT-'+pad(s)).join(' · ')} · ${rows.length} bélyegzőhely-szakasz</div><h3>${esc(NAMES[plan.a])} → ${esc(NAMES[plan.b])}</h3></div>
+    <div class="tiles">
+      <div class="tile"><div class="v">${fmtKm(km)} km</div><div class="l">táv</div></div>
+      <div class="tile"><div class="v">${fmtT(mn)}</div><div class="l">menetidő</div></div>
+      <div class="tile"><div class="v">+${f0(up)} m</div><div class="l">emelkedés</div></div>
+      <div class="tile"><div class="v">−${f0(dn)} m</div><div class="l">lejtés</div></div>
+    </div>
+    ${hasE?`<div class="tiles small">
+      <div class="tile lo"><div class="v">${f0(emin)} m</div><div class="l">min. magasság</div></div>
+      <div class="tile hi"><div class="v">${f0(emax)} m</div><div class="l">max. magasság</div></div>
+      <div class="tile up"><div class="v">${pct(gUp)}</div><div class="l">max. emelkedő</div></div>
+      <div class="tile dn"><div class="v">${pct(gDn)}</div><div class="l">max. lejtő</div></div>
+    </div>`:''}
+    <div class="who">
+      <span><b style="background:var(--d)"></b>Dénesnek megvan: <strong>${fmtKm(dk)} km</strong></span>
+      <span><b style="background:var(--n)"></b>Nórinak megvan: <strong>${fmtKm(nk)} km</strong></span>
+      <span><b style="background:var(--nonemap)"></b>Közös hiány: <strong>${fmtKm(ck)} km</strong></span>
+    </div>
+    ${hasE?`<div><svg class="profile" id="prof" role="img" aria-label="Szintprofil"></svg><div class="pstrip" id="pstrip"></div><div class="pinfo" id="pinfo">Vidd az egeret a szintprofilra: a térképen is mutatja a pontot.</div></div>`:''}
+    <div class="btns"><button class="btn primary" id="planShow" type="button">Mutasd a térképen</button>${tpLinks}</div>
+    <p class="plan-note">${rev?'Fordított irány: az emelkedés és a lejtés felcserélve, a menetidő a hivatalos (ellenkező irányú) érték. ':''}${ferry?'Az útvonal tartalmazza a Visegrád–Nagymaros kompátkelést. ':''}${hasE?'Magasság, max. emelkedő és lejtő: EU-DEM 25 m-es domborzati modellből, legalább 20 m szintkülönbségű szakaszon, becslés. ':''}Táv, szint és menetidő: MTSZ szakaszadatok.</p>
+  </div>`;
+  // térkép
+  const latlngs=idx.map(i=>rev?[...TRACKS[i]].reverse():TRACKS[i]);
+  L.polyline(latlngs,{color:'#fff',weight:12,opacity:.8,interactive:false}).addTo(planLayer);
+  L.polyline(latlngs,{color:css('--blue'),weight:6,opacity:1,interactive:false}).addTo(planLayer);
+  [[STAMPS[plan.a],'A'],[STAMPS[plan.b],'B']].forEach(([p,t])=>L.marker(p,{icon:L.divIcon({className:'',html:`<div style="background:${css('--blue')};color:#fff;font:700 12px/22px var(--body);width:22px;height:22px;border-radius:50%;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">${t}</div>`,iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(planLayer));
+  const bounds=L.latLngBounds(latlngs.flat());
+  document.getElementById('planShow').onclick=()=>{document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});map.fitBounds(bounds,{padding:[30,30]})};
+  if(!hasE)return;
+  // profil rajz
+  const svg0=document.getElementById('prof');const W=Math.max(300,Math.round(svg0.getBoundingClientRect().width)||800),H=W<500?170:200,P={l:44,r:8,t:10,b:22};svg0.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const span=Math.max(50,emax-emin),y0=Math.floor((emin-span*.08)/50)*50,y1=Math.ceil((emax+span*.08)/50)*50;
+  const X=d=>P.l+(d/km)*(W-P.l-P.r),Y=e=>P.t+(1-(e-y0)/(y1-y0))*(H-P.t-P.b);
+  const svg=document.getElementById('prof');const NS='http://www.w3.org/2000/svg';
+  const mk=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e};
+  const ystep=(y1-y0)>600?200:(y1-y0)>250?100:50;
+  for(let v=y0;v<=y1;v+=ystep){mk('line',{x1:P.l,x2:W-P.r,y1:Y(v),y2:Y(v),class:'grid'});mk('text',{x:P.l-6,y:Y(v)+4,'text-anchor':'end'},v+' m')}
+  const xstep=(km/(W/70))>5?10:(km/(W/70))>2?5:(km/(W/70))>1?2:1;
+  for(let v=0;v<=km+1e-9;v+=xstep)mk('text',{x:X(v),y:H-6,'text-anchor':'middle'},v+' km');
+  let d='M'+X(0)+' '+Y(el[0]);for(let k=1;k<el.length;k++)d+='L'+X(dkm[k]).toFixed(1)+' '+Y(el[k]).toFixed(1);
+  mk('path',{d:d+`L${X(km)} ${Y(y0)}L${X(0)} ${Y(y0)}Z`,class:'area'});mk('path',{d,class:'ln'});
+  const cur=mk('line',{x1:0,x2:0,y1:P.t,y2:H-P.b,class:'cur',visibility:'hidden'});
+  const ps=document.getElementById('pstrip');ps.style.marginLeft=(P.l/W*100)+'%';ps.style.marginRight=(P.r/W*100)+'%';
+  rows.forEach(r=>{const s=document.createElement('i');s.className='s-'+cls(r);s.style.flex=r[4]+' 0 0';s.title=`${r[2]} → ${r[3]}`;ps.appendChild(s)});
+  const pinfo=document.getElementById('pinfo');
+  function at(cx){const r=svg.getBoundingClientRect();const x=(cx-r.left)/r.width*W;const dv=Math.max(0,Math.min(km,(x-P.l)/(W-P.l-P.r)*km));
+    let k=0;while(k<dkm.length-1&&dkm[k+1]<dv)k++;
+    cur.setAttribute('x1',X(dkm[k]));cur.setAttribute('x2',X(dkm[k]));cur.setAttribute('visibility','visible');
+    curMark.setLatLng(pts[k]).addTo(map);const r0=SEG[segOf[k]];
+    pinfo.innerHTML=`<strong class="num">${fmtKm(dkm[k])} km · ${f0(el[k])} m</strong> · ${esc(r0[2])} → ${esc(r0[3])}`}
+  svg.addEventListener('pointermove',e=>at(e.clientX));svg.addEventListener('pointerdown',e=>at(e.clientX));
+  svg.addEventListener('pointerleave',()=>{cur.setAttribute('visibility','hidden');curMark.remove();pinfo.textContent='Vidd az egeret a szintprofilra: a térképen is mutatja a pontot.'});
+}
+// megosztható link: #ut=12-30
+(function(){const m=location.hash.match(/ut=(\d+)-(\d+)/);if(m){const a=+m[1]-1,b=+m[2]-1;if(NAMES[a]!=null&&NAMES[b]!=null){cFrom.set(a);cTo.set(b);planRender()}}})();
 </script>
 </body>
 </html>
