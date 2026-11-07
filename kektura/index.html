@@ -156,6 +156,17 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
     <div class="cap">A nyomvonal az OpenStreetMap OKT-útvonalaiból készült, bélyegzőhelyenként felbontva. Néhány helyen eltérhet a hivatalos, aktuális nyomvonaltól.</div>
   </section>
 
+  <section id="tervezo">
+    <h2>Útvonal két pont között</h2>
+    <p class="lead">Válassz két bélyegzőhelyet: kiírja a köztük lévő távot, szintet, menetidőt és a szintprofilt, és megmutatja a térképen. Elég elkezdeni gépelni a nevet.</p>
+    <div class="plan-pick">
+      <div class="combo" id="cFrom"><label for="cFromIn">Honnan</label><input id="cFromIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cFromList" autocomplete="off" placeholder="pl. Dorog"><ul id="cFromList" role="listbox" hidden></ul></div>
+      <button class="swap" id="swap" type="button" title="Irány megfordítása" aria-label="Irány megfordítása">⇄</button>
+      <div class="combo" id="cTo"><label for="cToIn">Hová</label><input id="cToIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cToList" autocomplete="off" placeholder="pl. Piliscsaba"><ul id="cToList" role="listbox" hidden></ul></div>
+    </div>
+    <div id="planOut"></div>
+  </section>
+
   <section>
     <h2>Minden bélyegzőhely-szakasz</h2>
     <div class="controls" id="filters">
@@ -190,17 +201,6 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
       <li><b>Dénes:</b> a 139–159. sor (Irota → Hollóháza) a papírfüzet alapján kész, a füzetről nincs fotó. A Rakacaszend – Irota szakasz azon múlik, megvan-e a Rakacaszend-pecsét.</li>
       <li><b>Dénes:</b> a többi adat a KÉKTÚRA app bélyegzéslistájából van (2026.11.02.).</li>
     </ul>
-  </section>
-
-  <section id="tervezo">
-    <h2>Útvonal két pont között</h2>
-    <p class="lead">Válassz két bélyegzőhelyet: kiírja a köztük lévő távot, szintet, menetidőt és a szintprofilt, és megmutatja a térképen. Elég elkezdeni gépelni a nevet.</p>
-    <div class="plan-pick">
-      <div class="combo" id="cFrom"><label for="cFromIn">Honnan</label><input id="cFromIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cFromList" autocomplete="off" placeholder="pl. Dorog"><ul id="cFromList" role="listbox" hidden></ul></div>
-      <button class="swap" id="swap" type="button" title="Irány megfordítása" aria-label="Irány megfordítása">⇄</button>
-      <div class="combo" id="cTo"><label for="cToIn">Hová</label><input id="cToIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cToList" autocomplete="off" placeholder="pl. Piliscsaba"><ul id="cToList" role="listbox" hidden></ul></div>
-    </div>
-    <div id="planOut"></div>
   </section>
 
   <footer>Szakaszadatok: MTSZ, OKT szakaszadatok (2026.09.10.) és bélyegzőhely-lista (2026.10.01.), kektura.hu. Nyomvonal: © OpenStreetMap-közreműködők. Pecsétek: Nóri papírfüzete (fotók, 2026.11.04.), Dénes KÉKTÚRA app (2026.11.02.) és papírfüzete.</footer>
