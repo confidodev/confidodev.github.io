@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Horizont közös tervező</title>
+<meta name="description" content="Dénes és Zoli Horizont kerékpáros túraútvonal-teljesítése szakaszonként, térképen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap&subset=latin-ext">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --fg:#1a2330; --muted:#5a6573; --line:#d8ddd5;
+  --blue:#1d5aa6; --both:#1d5aa6; --d:#2c8a63; --n:#c46a22; --none:#cfd5cc; --nonemap:#6b7480; --warn:#b3261e; --chip:#e7ece6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#181f27; --fg:#e4e9ee; --muted:#98a3b0; --line:#2b333d;
+  --blue:#6aa3ea; --both:#4f8fdf; --d:#4cbf92; --n:#e6995a; --none:#323b46; --warn:#f08a80; --chip:#222a33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#181f27; --fg:#e4e9ee; --muted:#98a3b0; --line:#2b333d;
+  --blue:#6aa3ea; --both:#4f8fdf; --d:#4cbf92; --n:#e6995a; --none:#323b46; --warn:#f08a80; --chip:#222a33; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+a{color:var(--blue)}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 56px;display:flex;flex-direction:column;gap:32px}
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,44px);letter-spacing:.01em}
+h1 .bar{display:inline-block;width:.9em;height:.32em;background:var(--blue);margin-right:.35em;vertical-align:.18em;border-radius:1px}
+h2{font-size:24px}
+.sub{color:var(--muted);margin:6px 0 0}
+.back{font-size:13px;text-decoration:none;color:var(--muted)}
+.back:hover{color:var(--blue)}
+.num{font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{border-top:3px solid var(--k);padding-top:8px}
+.stat .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stat .val{font-family:var(--display);font-size:32px;font-weight:600;line-height:1.1}
+.stat .val small{font-size:16px;color:var(--muted);font-weight:500}
+@media (max-width:560px){.stats{grid-template-columns:1fr}}
+.strip-box{display:flex;flex-direction:column;gap:8px}
+.strip{display:flex;height:30px;border-radius:3px;overflow:hidden;background:var(--none);gap:1px}
+.strip i{display:block;height:100%;cursor:pointer;min-width:1px}
+.strip i:hover{filter:brightness(1.15)}
+.strip i.on{box-shadow:inset 0 0 0 2px var(--fg)}
+.s-both{background:var(--both)} .s-d{background:var(--d)} .s-n{background:var(--n)} .s-none{background:var(--none)}
+.ticks{position:relative;height:16px;font-family:var(--display);font-size:12px;color:var(--muted)}
+.ticks span{position:absolute;top:0;border-left:1px solid var(--line);padding-left:3px;line-height:16px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend b{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+#map{height:min(70vh,620px);min-height:380px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.leaflet-container{font-family:var(--body)}
+.mapy-logo{display:block;line-height:0}
+.mapwrap{position:relative}
+.mapcard{position:absolute;z-index:1000;top:56px;right:10px;width:min(340px,calc(100% - 70px));max-height:calc(100% - 70px);overflow:auto;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:14px 14px 12px}
+.mapcard[hidden]{display:none}
+.mapcard .mk{font:600 12px/1.3 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--blue);padding-right:34px;overflow-wrap:anywhere}
+.mapcard h3{font:600 24px/1.15 var(--display);margin:4px 0 10px;padding-right:30px;overflow-wrap:anywhere}
+.mapcard .x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;border-radius:50%;background:var(--chip);color:var(--fg);font-size:18px;line-height:32px;cursor:pointer}
+.mapcard .tiles{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.mapcard .tiles+.tiles{margin-top:6px}
+.mapcard .tiles.small{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mapcard .tile{padding:7px 9px;border-radius:8px}
+.mapcard .tile .v{font-size:22px}
+.mapcard .tiles.small .tile{padding:6px 5px;text-align:center}
+.mapcard .tiles.small .tile .v{font-size:16px}
+.mapcard .tile .l{font-size:12px;line-height:1.2}
+.mapcard .mwho{margin:8px 0 0;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px}
+.mapcard .mwho b{color:var(--fg);font-weight:600}
+.mapcard .mbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.mapcard .mbtns a,.mapcard .mbtns button{display:block;text-align:center;padding:8px 6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px/1.2 var(--body);text-decoration:none;cursor:pointer}
+.mapcard .mbtns .pri{background:var(--blue);border-color:var(--blue);color:var(--surface)}
+@media (max-width:640px){.mapcard{position:relative;top:auto;right:auto;width:auto;max-height:none;margin-top:8px;box-shadow:none;backdrop-filter:none;background:var(--surface)}}
+.clean-btn{display:flex!important;align-items:center;gap:6px;padding:0 12px;height:34px;background:#fff;color:#1a2330!important;font:600 14px/1 var(--body);text-decoration:none!important;white-space:nowrap}
+.clean-btn span{font-size:17px}
+.clean-btn:hover{background:#f4f4f4}
+.clean-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mapy-logo img{height:20px;width:auto}
+.readout{font-size:14px;min-height:1.5em}
+.readout .m{color:var(--muted)}
+.cap{font-size:12.5px;color:var(--muted)}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface)}
+td.r,th.r{text-align:right}
+tr.sec td{background:var(--chip);font-family:var(--display);font-size:17px;font-weight:600}
+tr.sec{cursor:pointer}
+tr.sec:hover td{filter:brightness(.97)}
+tr.sec:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+tr.sec .car{display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
+tr.sec.open .car{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){tr.sec .car{transition:none}}
+tr.sec td .m{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:500;margin-left:8px}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--chip)}
+tr.row.on td{background:var(--chip);box-shadow:inset 0 -2px 0 var(--blue)}
+.note{display:block;font-size:12.5px;color:var(--warn);margin-top:2px}
+.pill{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;border-radius:11px;font-size:13px;font-weight:600;padding:0 7px}
+.p1d{background:var(--d);color:#fff} .p1n{background:var(--n);color:#fff}
+.p0{color:var(--muted);border:1px solid var(--line)}
+.p2{color:var(--warn);border:1.5px dashed var(--warn)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:16px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip:focus-visible,select:focus-visible,.strip i:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+select{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:5px 8px;max-width:100%}
+.count{color:var(--muted);font-size:13px;margin-left:auto}
+section{display:flex;flex-direction:column;gap:14px}
+.lead{color:var(--muted);margin:0;max-width:68ch}
+ul.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:75ch}
+.mapy{font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.mapy:hover{text-decoration:underline}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:'▸';color:var(--muted);font-size:18px;transition:transform .15s;display:inline-block}
+details.fold[open]>summary::before{transform:rotate(90deg)}
+details.fold>summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:4px}
+details.fold>summary h2{display:inline}
+.fold-meta{font-family:var(--body);font-size:14px;font-weight:500;color:var(--muted);margin-left:6px}
+.fold-body{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+@media (prefers-reduced-motion:reduce){details.fold>summary::before{transition:none}}
+/* két pont közötti tervező */
+.plan-pick{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+@media (max-width:640px){.plan-pick{grid-template-columns:1fr}.swap{justify-self:center;transform:rotate(90deg)}}
+.combo{position:relative;display:flex;flex-direction:column;gap:4px}
+.combo label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.combo input{font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);width:100%}
+.combo input:focus{outline:2px solid var(--blue);outline-offset:1px}
+.combo ul{position:absolute;top:100%;left:0;right:0;z-index:1000;margin:4px 0 0;padding:4px;list-style:none;max-height:300px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.combo li{padding:7px 10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.combo li small{color:var(--muted);white-space:nowrap}
+.combo li[aria-selected="true"],.combo li:hover{background:var(--chip)}
+.combo li.empty{color:var(--muted);cursor:default}
+.swap{font:inherit;font-size:18px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.swap:hover{border-color:var(--blue)}
+.swap:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.plan-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.plan-card .kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);font-weight:600}
+.plan-card h3{font-family:var(--display);font-size:clamp(24px,4vw,32px);font-weight:700;margin:2px 0 0;line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tiles.small .tile .v{font-size:20px}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--chip);border-radius:10px;padding:10px 12px}
+.tile .v{white-space:nowrap;font-family:var(--display);font-size:clamp(20px,5vw,28px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile.lo .v{color:var(--d)} .tile.hi .v{color:var(--n)} .tile.up .v{color:var(--warn)} .tile.dn .v{color:var(--blue)}
+.who{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.who b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.profile{width:100%;height:auto;display:block;touch-action:pan-y}
+.profile .area{fill:var(--blue);fill-opacity:.15}
+.profile .ln{fill:none;stroke:var(--blue);stroke-width:2;vector-effect:non-scaling-stroke}
+.profile .grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.profile text{font-size:11px;fill:var(--muted);font-family:var(--body)}
+.profile .cur{stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
+.pstrip{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:1px;margin-top:4px}
+.pinfo{font-size:13px;color:var(--muted);min-height:1.4em}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn:hover{border-color:var(--blue)}
+.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.plan-note{font-size:12.5px;color:var(--muted);margin:0}
+.plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.plan-head>div:first-child{min-width:0;flex:1}
+.plan-card .kicker{overflow-wrap:anywhere}
+.stars{display:flex;gap:6px;flex-shrink:0}
+.star{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.star svg{width:24px;height:24px}
+.star path{fill:none;stroke:var(--sc);stroke-width:1.8;stroke-linejoin:round}
+.star[aria-pressed="true"] path{fill:var(--sc)}
+.star[aria-pressed="true"]{border-color:var(--sc)}
+.star:hover{border-color:var(--sc)}
+.star:focus-visible{outline:2px solid var(--sc);outline-offset:2px}
+.star.run{--sc:var(--d)} .star.nori{--sc:var(--n)}
+.star[disabled]{cursor:default;opacity:.85}
+.star.busy{opacity:.5;cursor:progress}
+.starred{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.starred{grid-template-columns:1fr}}
+.sgroup{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--sc);border-radius:8px;padding:12px 14px}
+.sgroup.run{--sc:var(--d)} .sgroup.nori{--sc:var(--n)}
+.sgroup h3{font-family:var(--display);font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.sgroup h3 .si{color:var(--sc)}
+.sgroup ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sgroup li button{font:inherit;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--fg);display:flex;justify-content:space-between;gap:10px}
+.sgroup li button:hover,.sgroup li button.on{background:var(--chip)}
+.sgroup li button small{color:var(--muted);white-space:nowrap}
+.sgroup .empty{color:var(--muted);font-size:14px;padding:4px 8px}
+.edit-link{font:inherit;font-size:13px;background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:2000;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">← confidodev.github.io</a>
+    <h1><span class="bar"></span>Horizont közös tervező</h1>
+    <p class="sub">Horizont kerékpáros túraútvonal · Dénes és Zoli · <span id="hdr"></span></p>
+  </header>
+
+  <details class="fold" id="sumFold" open>
+  <summary><h2>Összesítés <span class="fold-meta num" id="sumMeta"></span></h2></summary>
+  <div class="fold-body">
+  <div class="stats" id="stats"></div>
+
+  <div class="strip-box">
+    <div class="strip" id="strip" role="list" aria-label="A kész útvonal szakaszonként, Putnoktól Szentgotthárdig"></div>
+    <div class="ticks" id="ticks"></div>
+    <div class="legend">
+      <span><b class="s-both"></b>Mindketten kész</span>
+      <span><b class="s-d"></b>Csak Dénes</span>
+      <span><b class="s-n"></b>Csak Zoli</span>
+      <span><b class="s-none" style="background:var(--nonemap)"></b>Közös hiány</span>
+    </div>
+  </div>
+  </div>
+  </details>
+
+  <section>
+    <div class="mapwrap"><div id="map" role="region" aria-label="Térkép a Horizont szakaszaival"></div><aside class="mapcard" id="mapCard" aria-label="Kiválasztott útvonal összefoglalója" hidden></aside></div>
+    <div class="readout" id="readout"><span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: az adatai lent, az „Útvonal két pont között” blokkban jelennek meg.</span></div>
+    <div class="cap">A nyomvonal a horizontbike.hu hivatalos GPX-eiből készült, pecsételőpontonként felbontva. Az 1–5. szakasz (Tokaj – Putnok) még épül, 2027 tavaszára várható.</div>
+  </section>
+
+  <section id="tervezo">
+    <details class="fold" id="planFold">
+    <summary><h2>Útvonal két pont között <span class="fold-meta num" id="planMeta"></span></h2></summary>
+    <div class="fold-body">
+    <p class="lead">Válassz két pecsételőpontot: kiírja a köztük lévő távot, szintet és a szintprofilt, és megmutatja a térképen. Elég elkezdeni gépelni a nevet.</p>
+    <div class="plan-pick">
+      <div class="combo" id="cFrom"><label for="cFromIn">Honnan</label><input id="cFromIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cFromList" autocomplete="off" placeholder="pl. Eger"><ul id="cFromList" role="listbox" hidden></ul></div>
+      <button class="swap" id="swap" type="button" title="Irány megfordítása" aria-label="Irány megfordítása">⇄</button>
+      <div class="combo" id="cTo"><label for="cToIn">Hová</label><input id="cToIn" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cToList" autocomplete="off" placeholder="pl. Hollókő"><ul id="cToList" role="listbox" hidden></ul></div>
+    </div>
+    <div id="planOut"></div>
+    <div class="starred" id="starred" aria-live="polite"></div>
+    </div>
+    </details>
+  </section>
+
+  <section>
+    <details class="fold" id="segFold">
+    <summary><h2>Minden pecsételőpont-szakasz <span class="fold-meta num" id="segMeta"></span></h2></summary>
+    <div class="fold-body">
+    <div class="controls" id="filters">
+      <button class="chip" data-f="all" aria-pressed="true">Mind</button>
+      <button class="chip" data-f="none" aria-pressed="false">Közös hiány</button>
+      <button class="chip" data-f="d" aria-pressed="false">Csak Dénesnek kell</button>
+      <button class="chip" data-f="n" aria-pressed="false">Csak Zolinak kell</button>
+      <button class="chip" data-f="both" aria-pressed="false">Mindketten kész</button>
+      <label for="secsel" style="position:absolute;left:-9999px">Szakasz</label>
+      <select id="secsel"><option value="0">Összes szakasz</option></select>
+      <span class="count" id="count"></span>
+      <button class="chip" id="toggleAll" type="button">Mind kinyit</button>
+    </div>
+    <div class="tablebox"><table id="segs"><thead><tr><th class="r">#</th><th>Pecsételőpont-szakasz</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th>Dénes</th><th>Zoli</th><th>Leírás</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    </details>
+  </section>
+
+  <section>
+    <details class="fold" id="runsFold">
+    <summary><h2>Közös hiányok összefüggő darabokban <span class="fold-meta num" id="runsMeta"></span></h2></summary>
+    <div class="fold-body">
+    <p class="lead">Ezek a részek egyikőtöknek sincsenek meg. Egy sor egy megszakítás nélküli darab, amit egyben végig lehet tekerni.</p>
+    <div class="tablebox"><table id="runs"><thead><tr><th>Szakasz</th><th>Honnan → hová</th><th class="r">km</th><th class="r">↑ / ↓ m</th><th class="r">Pecsét-szakasz</th><th>Leírás</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    </details>
+  </section>
+
+  <section>
+    <details class="fold" id="notesFold">
+    <summary><h2>Feltételezések és ellenőrizendők <span class="fold-meta num">· 5 megjegyzés</span></h2></summary>
+    <div class="fold-body">
+    <ul class="notes">
+      <li><b>Kész</b> = a Horizont app „Teljesített szakaszok” listáján szerepel a szakasz; ilyenkor a szakasz összes pecsételőpont-szakaszát késznek vettük.</li>
+      <li><b>Dénes és Zoli:</b> a 11., 12. és 13. szakasz kész (app-képernyőkép, 2026.11.12.).</li>
+      <li><b>Részben teljesített szakasz</b> (csak néhány pecsét) még nincs jelölve; ha van ilyen, küldd el, és beírom pecsételőpontonként.</li>
+      <li><b>Táv és szint:</b> szakaszonként a horizontbike.hu hivatalos adata; a szakaszon belüli bontás a hivatalos GPX-ből arányosítva, ezért 0,1–1 km-rel eltérhet a szakaszoldal „előző ponttól” értékeitől.</li>
+      <li><b>Olaszfa faluközpont</b> (25. szakasz): a GPX-ben a pont máshol van, mint a szakaszoldal listája szerint, ezért a hivatalos táv alapján helyeztük el. A Visegrádi révkikötő pont nincs a GPX-ben, a szakasz kezdőpontjára tettük.</li>
+    </ul>
+    </div>
+    </details>
+  </section>
+
+  <footer><button class="edit-link" id="editBtn" type="button">Szerkesztő mód</button> · Szakaszadatok, nyomvonal és pecsételőpontok: horizontbike.hu (2026.11.12.). Teljesítés: Horizont app, Dénes és Zoli (2026.11.12.). Lásd még: <a href="../kektura/">Kéktúra közös tervező</a>.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data.js?v=1"></script>
+<script>
+// Ide kerül a Mapy.com API-kulcs (developer.mapy.com). Üresen OpenStreetMap-alaptérkép jelenik meg.
+const MAPY_KEY = 'fJtu9W7W-aMWl7xRgzDunnpZ6TRtC7F6aKxc2sbsR4Q';
+
+const fmtKm=x=>x.toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmtT=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const pad=n=>String(n).padStart(2,'0');
+const cls=r=>r[8]===1&&r[9]===1?'both':r[8]===1?'d':r[9]===1?'n':'none';
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL=()=>({both:css('--both'),d:css('--d'),n:css('--n'),none:css('--nonemap')});
+const total=SEG.reduce((a,r)=>a+r[4],0);
+const sum=f=>SEG.filter(f).reduce((a,r)=>a+r[4],0);
+const el=(t,a={},h='')=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);if(h)e.innerHTML=h;return e};
+const ptsOf=n=>SP[n-1];
+const SECBY={};SECS.forEach(s=>SECBY[s[0]]=s);
+const SL=n=>n+'. szakasz';
+// horizontbike.hu: az adott szakasz hivatalos oldala
+const tpUrl=sec=>SECBY[sec][2];
+const tpA=sec=>`<a class="mapy" href="${tpUrl(sec)}" target="_blank" rel="noopener">${sec}. szakasz ↗</a>`;
+
+document.getElementById('hdr').textContent=`${SECS.length} kész szakasz, ${fmtKm(total)} km`;
+
+// statisztika
+const dk=sum(r=>r[8]===1), nk=sum(r=>r[9]===1), ck=sum(r=>r[8]!==1&&r[9]!==1);
+document.getElementById('sumMeta').textContent=`· Dénes ${Math.round(dk/total*100)}% · Zoli ${Math.round(nk/total*100)}% · közös hiány ${Math.round(ck/total*100)}%`;
+document.getElementById('stats').innerHTML=[
+ ['Dénes kész','--d',dk],['Zoli kész','--n',nk],['Közösen hiányzik','--muted',ck]
+].map(([l,k,v])=>`<div class="stat" style="--k:var(${k})"><div class="lbl">${l}</div><div class="val num">${fmtKm(v)} km <small>${Math.round(v/total*100)}%</small></div></div>`).join('');
+
+// térkép
+const map=L.map('map',{zoomSnap:0.25,scrollWheelZoom:true});
+const allBounds=L.latLngBounds(TRACKS.flat());
+map.fitBounds(allBounds,{padding:[16,16]});
+if(MAPY_KEY){
+  L.tileLayer(`https://api.mapy.com/v1/maptiles/outdoor/256/{z}/{x}/{y}?apikey=${MAPY_KEY}`,{
+    minZoom:0,maxZoom:19,attribution:'<a href="https://api.mapy.com/copyright" target="_blank" rel="noopener">&copy; Seznam.cz a.s. és mások</a>'}).addTo(map);
+  const Logo=L.Control.extend({options:{position:'bottomleft'},onAdd(){const d=L.DomUtil.create('div');d.innerHTML='<a class="mapy-logo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a>';L.DomEvent.disableClickPropagation(d);return d}});
+  new Logo().addTo(map);
+}else{
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-közreműködők'}).addTo(map);
+}
+const lines=[],hits=[];
+const order=SEG.map((r,i)=>i).sort((a,b)=>(cls(SEG[a])==='none'?0:1)-(cls(SEG[b])==='none'?0:1));
+const casing=L.layerGroup().addTo(map), segLayer=L.layerGroup().addTo(map), hitLayer=L.layerGroup().addTo(map);
+function styleFor(i,dim){const c=COL()[cls(SEG[i])];return {color:c,weight:cls(SEG[i])==='none'?3.5:5,opacity:dim?0.25:0.95,lineCap:'round',lineJoin:'round'}}
+order.forEach(i=>{
+  L.polyline(TRACKS[i],{color:'#fff',weight:8,opacity:.7,interactive:false}).addTo(casing);
+  lines[i]=L.polyline(TRACKS[i],styleFor(i,false)).addTo(segLayer);
+  const h=L.polyline(TRACKS[i],{color:'#000',opacity:0,weight:18}).addTo(hitLayer);
+  h.on('mouseover',()=>hl(i));h.on('mouseout',unhl);h.on('click',()=>mapPick(i));
+  hits[i]=h;
+});
+const halo=L.polyline(TRACKS[0], {color:css('--fg')||'#000',weight:14,opacity:.2,interactive:false});
+const topLine=L.polyline(TRACKS[0], {weight:7,opacity:1,interactive:false});
+const Reset=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');b.href='#';b.title='Teljes nézet';b.setAttribute('role','button');b.innerHTML='⤢';b.style.cssText='width:30px;height:30px;line-height:30px;text-align:center;font-size:16px;background:#fff;color:#333;text-decoration:none;display:block';L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);map.fitBounds(allBounds,{padding:[16,16]})});return b}});
+new Reset().addTo(map);
+// Tiszta lap: az oldal újratöltése kijelölések, szűrők és tervezett útvonal nélkül
+const Clean=L.Control.extend({options:{position:'topright'},onAdd(){const a=L.DomUtil.create('a','clean-btn leaflet-bar');a.href='./';a.title='Kijelölések törlése, tiszta lap';a.innerHTML='<span aria-hidden="true">⟲</span> Tiszta lap';L.DomEvent.disableClickPropagation(a);L.DomEvent.on(a,'click',e=>{L.DomEvent.preventDefault(e);try{history.scrollRestoration='manual'}catch(_){}window.scrollTo(0,0);location.replace(location.pathname)});return a}});
+new Clean().addTo(map);
+
+// csík
+const strip=document.getElementById('strip'), ticks=document.getElementById('ticks');
+let acc=0; const seen=new Set(); const stripEls=[];
+SEG.forEach((r,i)=>{
+  const s=el('i',{class:'s-'+cls(r),role:'listitem',tabindex:'0',title:`${SL(r[1])} · ${r[2]} → ${r[3]} · ${fmtKm(r[4])} km`});
+  s.style.flex=r[4]+' 0 0';
+  s.onclick=()=>pick(i,true);
+  s.onkeydown=e=>{if(e.key==='Enter')pick(i,true)};
+  s.addEventListener('mouseenter',()=>hl(i));s.addEventListener('mouseleave',unhl);
+  stripEls.push(s);strip.appendChild(s);
+  if(!seen.has(r[1])&&[6,8,10,12,14,16,18,20,22,24,26].includes(r[1])){seen.add(r[1]);const t=el('span',{},String(r[1]));t.style.left=(acc/total*100)+'%';ticks.appendChild(t)}
+  acc+=r[4];
+});
+
+// kijelölés
+const ro=document.getElementById('readout');
+const stTxt=s=>s===1?'kész':s===2?'ellenőrizendő':'hiányzik';
+let pinned=-1;
+function show(i){
+  const r=SEG[i];
+  stripEls.forEach(e=>e.classList.remove('on'));stripEls[i].classList.add('on');
+  halo.setLatLngs(TRACKS[i]).addTo(map);topLine.setLatLngs(TRACKS[i]).addTo(map);topLine.setStyle({color:COL()[cls(r)]});
+  ro.innerHTML=`<b>${SL(r[1])}</b> · ${r[2]} → ${r[3]} <span class="m num">· ${fmtKm(r[4])} km · ↑${r[5]} ↓${r[6]} m</span> · Dénes: ${stTxt(r[8])} · Zoli: ${stTxt(r[9])} · ${tpA(r[1])}`;
+}
+function hl(i){show(i)}
+function unhl(){if(pinned>=0){show(pinned);return}stripEls.forEach(e=>e.classList.remove('on'));halo.remove();topLine.remove();ro.innerHTML='<span class="m">Vidd az egeret egy szakaszra, vagy kattints rá: az adatai lent, az „Útvonal két pont között” blokkban jelennek meg.</span>'}
+// térképes kattintás: a szakasz adatai az útvonaltervezőbe kerülnek
+function mapPick(i){pinned=i;show(i);const [a,b]=ptsOf(SEG[i][0]);cFrom.set(a);cTo.set(b);planRender()}
+function pick(i,zoom){pinned=i;document.getElementById('segFold').open=true;secSel.value=SEG[i][1];OPEN.add(SEG[i][1]);render();show(i);if(zoom)map.fitBounds(L.latLngBounds(TRACKS[i]),{padding:[60,60],maxZoom:14})}
+
+// közös hiányok
+const runs=[];let cur=null;
+SEG.forEach((r,i)=>{
+  const gap=r[8]!==1&&r[9]!==1;
+  if(cur&&((i>0&&SP[i][0]!==SP[i-1][1])||!gap)){runs.push(cur);cur=null}
+  if(gap){if(!cur)cur={rows:[],idx:[]};cur.rows.push(r);cur.idx.push(i)}
+});
+if(cur)runs.push(cur);
+const rb=document.querySelector('#runs tbody');
+document.getElementById('runsMeta').textContent=`· ${runs.length} darab · ${fmtKm(runs.reduce((t,u)=>t+u.rows.reduce((x,r)=>x+r[4],0),0))} km`;
+runs.forEach(u=>{
+  const a=u.rows[0],b=u.rows[u.rows.length-1];
+  const km=u.rows.reduce((s,r)=>s+r[4],0),up=u.rows.reduce((s,r)=>s+r[5],0),dn=u.rows.reduce((s,r)=>s+r[6],0);
+  const chk=u.rows.some(r=>r[8]===2||r[9]===2);
+  const secs=a[1]===b[1]?a[1]+'.':a[1]+'–'+b[1]+'.';
+  const tr=el('tr',{class:'row'},`<td class="num">${secs}</td><td>${a[2]} → ${b[3]}${chk?'<span class="note">Ellenőrizendő szakaszt is tartalmaz</span>':''}</td><td class="r num">${fmtKm(km)}</td><td class="r num">${up} / ${dn}</td><td class="r num">${u.rows.length}</td><td>${tpA(a[1])}${a[1]!==b[1]?' '+tpA(b[1]):''}</td>`);
+  tr.onclick=e=>{if(e.target.closest('a'))return;const bb=L.latLngBounds(u.idx.flatMap(i=>TRACKS[i]));map.fitBounds(bb,{padding:[40,40]});document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})};
+  rb.appendChild(tr);
+});
+
+// fő táblázat
+const secSel=document.getElementById('secsel');
+SECS.forEach(([n,name])=>secSel.appendChild(el('option',{value:n},`${n}. ${name}`)));
+let filt='all';
+document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{filt=b.dataset.f;document.querySelectorAll('#filters .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+secSel.onchange=()=>{document.getElementById('segFold').open=true;pinned=-1;unhl();if(+secSel.value)OPEN.add(+secSel.value);render();const sv=+secSel.value;if(sv){const idx=SEG.map((r,i)=>r[1]===sv?i:-1).filter(i=>i>=0);map.fitBounds(L.latLngBounds(idx.flatMap(i=>TRACKS[i])),{padding:[30,30]})}else map.fitBounds(allBounds,{padding:[16,16]})};
+const pill=(s,who,note)=>s===1?`<span class="pill p1${who}" title="Kész">✓</span>`:s===2?`<span class="pill p2" title="${note||'Ellenőrizendő'}">?</span>`:`<span class="pill p0" title="Hiányzik">–</span>`;
+function match(r){
+  if(filt==='none')return r[8]!==1&&r[9]!==1;
+  if(filt==='d')return r[8]!==1&&r[9]===1;
+  if(filt==='n')return r[9]!==1&&r[8]===1;
+  if(filt==='both')return r[8]===1&&r[9]===1;
+  if(filt==='chk')return r[8]===2||r[9]===2;
+  return true;
+}
+const OPEN=new Set();
+function render(){
+  const sv=+secSel.value, tb=document.querySelector('#segs tbody');
+  lines.forEach((p,i)=>p.setStyle(styleFor(i,!!sv&&SEG[i][1]!==sv)));
+  tb.innerHTML='';
+  const rows=SEG.map((r,i)=>[r,i]).filter(([r])=>(!sv||r[1]===sv)&&match(r));
+  let last=0,kmTot=0;
+  rows.forEach(([r,i])=>{
+    if(r[1]!==last){last=r[1];const s=SECBY[r[1]];const all=SEG.filter(x=>x[1]===r[1]);const sk=all.reduce((a,x)=>a+x[4],0);
+      const d=all.filter(x=>x[8]===1).reduce((a,x)=>a+x[4],0),n=all.filter(x=>x[9]===1).reduce((a,x)=>a+x[4],0);
+      const open=OPEN.has(r[1]),hits=rows.filter(([x])=>x[1]===r[1]).length,filtered=filt!=='all';
+      const h=el('tr',{class:'sec'+(open?' open':''),tabindex:'0',role:'button','aria-expanded':String(open),title:open?'Becsukás':'Kinyitás: pecsételőpont-szakaszok'},`<td colspan="7"><span class="car" aria-hidden="true">▸</span>${s[0]}. ${s[1]}<span class="m num">${fmtKm(sk)} km · Dénes ${fmtKm(d)} · Zoli ${fmtKm(n)}${filtered?` · ${hits} találat`:` · ${all.length} pecsét-szakasz`}</span></td>`);
+      const tog=()=>{OPEN.has(r[1])?OPEN.delete(r[1]):OPEN.add(r[1]);render()};
+      h.onclick=tog;h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}};
+      tb.appendChild(h)}
+    kmTot+=r[4];
+    if(!OPEN.has(r[1]))return;
+    const [a,b]=ptsOf(r[0]);
+    const tr=el('tr',{class:'row'+(i===pinned?' on':'')},`<td class="r num">${r[0]}</td><td class="route">${r[2]} → ${r[3]}${r[10]?`<span class="note">${r[10]}</span>`:''}</td><td class="r num">${fmtKm(r[4])}</td><td class="r num">${r[5]} / ${r[6]}</td><td>${pill(r[8],'d',r[10])}</td><td>${pill(r[9],'n',r[10])}</td><td>${tpA(r[1])}</td>`);
+    tr.onclick=e=>{if(e.target.closest('a'))return;pick(i,true);document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})};
+    tr.onmouseenter=()=>hl(i);tr.onmouseleave=unhl;
+    tb.appendChild(tr);
+  });
+  document.getElementById('count').textContent=`${rows.length} szakasz · ${fmtKm(kmTot)} km`;
+  document.getElementById('segMeta').textContent=`· ${SECS.length} szakasz · ${SEG.length} pecsét-szakasz`;
+  const secsShown=[...new Set(rows.map(([r])=>r[1]))],allOpen=secsShown.length&&secsShown.every(x=>OPEN.has(x));
+  const tb2=document.getElementById('toggleAll');tb2.textContent=allOpen?'Mind becsuk':'Mind kinyit';
+  tb2.onclick=()=>{if(allOpen)secsShown.forEach(x=>OPEN.delete(x));else secsShown.forEach(x=>OPEN.add(x));render()};
+}
+render();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{render();if(pinned>=0)show(pinned);if(plan.a>=0&&plan.b>=0)planRender()});
+
+// ===== Útvonal két pont között =====
+const STSEC=[];
+SEG.forEach(r=>{const [a,b]=ptsOf(r[0]);if(STSEC[a]==null)STSEC[a]=r[1];if(STSEC[b]==null)STSEC[b]=r[1]});
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const NN=NAMES.map(norm);
+const plan={a:-1,b:-1};
+const hav=(p,q)=>{const R=6371000,r=Math.PI/180,dp=(q[0]-p[0])*r,dl=(q[1]-p[1])*r,h=Math.sin(dp/2)**2+Math.cos(p[0]*r)*Math.cos(q[0]*r)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function makeCombo(rootId,key){
+  const root=document.getElementById(rootId),inp=root.querySelector('input'),ul=root.querySelector('ul');
+  let items=[],act=-1;
+  const open=()=>{ul.hidden=false;inp.setAttribute('aria-expanded','true')};
+  const close=()=>{ul.hidden=true;inp.setAttribute('aria-expanded','false');act=-1};
+  function fill(){
+    const q=norm(inp.value.trim());
+    items=NAMES.map((n,i)=>i).filter(i=>!q||NN[i].includes(q));
+    items.sort((x,y)=>(q&&NN[x].startsWith(q)?0:1)-(q&&NN[y].startsWith(q)?0:1)||x-y);
+    act=items.length?0:-1;
+    ul.innerHTML=items.length?items.map((i,k)=>`<li role="option" id="${rootId}-o${i}" data-i="${i}" aria-selected="${k===act}">${esc(NAMES[i])}<small>${STSEC[i]}. sz. · ${i+1}.</small></li>`).join(''):'<li class="empty">Nincs ilyen pecsételőpont</li>';
+    if(act>=0)inp.setAttribute('aria-activedescendant',`${rootId}-o${items[act]}`);
+  }
+  function mark(){[...ul.children].forEach((li,k)=>li.setAttribute('aria-selected',k===act));const li=ul.children[act];if(li){li.scrollIntoView({block:'nearest'});inp.setAttribute('aria-activedescendant',li.id)}}
+  function choose(i){plan[key]=i;inp.value=NAMES[i];close();planRender()}
+  inp.addEventListener('focus',()=>{inp.select();fill();open()});
+  inp.addEventListener('input',()=>{fill();open()});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();if(ul.hidden){fill();open()}else if(act<items.length-1){act++;mark()}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(act>0){act--;mark()}}
+    else if(e.key==='Enter'){if(!ul.hidden&&act>=0){e.preventDefault();choose(items[act])}}
+    else if(e.key==='Escape'){close();if(plan[key]>=0)inp.value=NAMES[plan[key]]}
+  });
+  ul.addEventListener('mousedown',e=>{const li=e.target.closest('li[data-i]');if(li){e.preventDefault();choose(+li.dataset.i)}});
+  inp.addEventListener('blur',()=>{setTimeout(()=>{close();inp.value=plan[key]>=0?NAMES[plan[key]]:''},120)});
+  return {set(i){plan[key]=i;inp.value=i>=0?NAMES[i]:''}};
+}
+const cFrom=makeCombo('cFrom','a'),cTo=makeCombo('cTo','b');
+document.getElementById('swap').onclick=()=>{const a=plan.a,b=plan.b;cFrom.set(b);cTo.set(a);planRender()};
+
+const planLayer=L.layerGroup().addTo(map);
+const curMark=L.circleMarker([0,0],{radius:7,color:'#fff',weight:2,fillColor:'#1d5aa6',fillOpacity:1,interactive:false});
+
+function planRender(){
+  if(plan.a>=0&&plan.b>=0)document.getElementById('planFold').open=true;
+  const out=document.getElementById('planOut');
+  planLayer.clearLayers();curMark.remove();
+  const mc=document.getElementById('mapCard');mc.hidden=true;
+  if(plan.a<0||plan.b<0){out.innerHTML='';return}
+  try{history.replaceState(null,'',`#ut=${plan.a+1}-${plan.b+1}`)}catch(e){}
+  if(plan.a===plan.b){out.innerHTML='<p class="plan-note">A két pont ugyanaz, válassz egy másikat.</p>';return}
+  const rev=plan.a>plan.b,lo=Math.min(plan.a,plan.b),hi=Math.max(plan.a,plan.b);
+  let idx=SEG.map((r,i)=>i).filter(i=>{const [p,q]=ptsOf(SEG[i][0]);return p>=lo&&q<=hi});
+  if(rev)idx=idx.reverse();
+  const rows=idx.map(i=>SEG[i]);
+  const km=rows.reduce((s,r)=>s+r[4],0);
+  let up=rows.reduce((s,r)=>s+r[5],0),dn=rows.reduce((s,r)=>s+r[6],0);if(rev)[up,dn]=[dn,up];
+  const dk=rows.filter(r=>r[8]===1).reduce((s,r)=>s+r[4],0),nk=rows.filter(r=>r[9]===1).reduce((s,r)=>s+r[4],0),ck=rows.filter(r=>r[8]!==1&&r[9]!==1).reduce((s,r)=>s+r[4],0);
+  const secs=[...new Set(rows.map(r=>r[1]))];
+  const ferry=idx.some(i=>i>0&&SP[i][0]!==SP[i-1][1]&&idx.includes(i-1));
+  // profil
+  const pts=[],el=[],segOf=[];
+  idx.forEach(i=>{let t=TRACKS[i],e=(typeof ELEV!=='undefined')?ELEV[i]:null;if(rev){t=[...t].reverse();e=e&&[...e].reverse()}t.forEach((p,k)=>{pts.push(p);el.push(e?e[k]:null);segOf.push(i)})});
+  const dist=[0];for(let k=1;k<pts.length;k++)dist.push(dist[k-1]+(segOf[k]===segOf[k-1]?hav(pts[k-1],pts[k]):0));
+  const scale=dist[dist.length-1]>0?km/(dist[dist.length-1]/1000):1;
+  const dkm=dist.map(d=>d/1000*scale);
+  const hasE=el.every(v=>v!=null);
+  let emin=0,emax=0,gUp=0,gDn=0;
+  if(hasE){emin=Math.min(...el);emax=Math.max(...el);
+    for(let i=0;i<el.length;i++){for(let j=i+1;j<el.length&&dist[j]-dist[i]<2000;j++){const dz=el[j]-el[i];if(Math.abs(dz)>=20){const dd=dist[j]-dist[i];if(dd>=60){const g=dz/dd*100;if(g>gUp)gUp=g;if(-g>gDn)gDn=-g}break}}}}
+  const f0=n=>Math.round(n).toLocaleString('hu-HU');
+  const pct=g=>g.toLocaleString('hu-HU',{maximumFractionDigits:1})+'%';
+  const tpLinks=secs.map(s=>`<a class="btn" href="${tpUrl(s)}" target="_blank" rel="noopener">↗ ${s}. szakasz leírás</a>`).join('');
+  out.innerHTML=`<div class="plan-card">
+    <div class="plan-head"><div><div class="kicker">${secs.map(s=>s+'.').join(' · ')} szakasz · ${rows.length} pecsét-szakasz</div><h3>${esc(NAMES[plan.a])} → ${esc(NAMES[plan.b])}</h3></div>${starBtns()}</div>
+    <div class="tiles">
+      <div class="tile"><div class="v">${fmtKm(km)} km</div><div class="l">táv</div></div>
+      <div class="tile"><div class="v">${rows.length+1}</div><div class="l">pecsételőpont</div></div>
+      <div class="tile"><div class="v">+${f0(up)} m</div><div class="l">emelkedés</div></div>
+      <div class="tile"><div class="v">−${f0(dn)} m</div><div class="l">lejtés</div></div>
+    </div>
+    ${hasE?`<div class="tiles small">
+      <div class="tile lo"><div class="v">${f0(emin)} m</div><div class="l">min. magasság</div></div>
+      <div class="tile hi"><div class="v">${f0(emax)} m</div><div class="l">max. magasság</div></div>
+      <div class="tile up"><div class="v">${pct(gUp)}</div><div class="l">max. emelkedő</div></div>
+      <div class="tile dn"><div class="v">${pct(gDn)}</div><div class="l">max. lejtő</div></div>
+    </div>`:''}
+    <div class="who">
+      <span><b style="background:var(--d)"></b>Dénesnek megvan: <strong>${fmtKm(dk)} km</strong></span>
+      <span><b style="background:var(--n)"></b>Zolinak megvan: <strong>${fmtKm(nk)} km</strong></span>
+      <span><b style="background:var(--nonemap)"></b>Közös hiány: <strong>${fmtKm(ck)} km</strong></span>
+    </div>
+    ${hasE?`<div><svg class="profile" id="prof" role="img" aria-label="Szintprofil"></svg><div class="pstrip" id="pstrip"></div><div class="pinfo" id="pinfo">Vidd az egeret a szintprofilra: a térképen is mutatja a pontot.</div></div>`:''}
+    <div class="btns"><button class="btn primary" id="planShow" type="button">Mutasd a térképen</button>${tpLinks}</div>
+    <p class="plan-note">${rev?'Fordított irány (a hivatalos irány keletről nyugatra): az emelkedés és a lejtés felcserélve. ':''}${ferry?'Az útvonal tartalmazza a Nagymaros–Visegrád kompátkelést. ':''}${hasE?'Magasság, max. emelkedő és lejtő: a hivatalos GPX magasságadataiból, legalább 20 m szintkülönbségű szakaszon, becslés. ':''}Táv és szint: horizontbike.hu szakaszadatok.</p>
+  </div>`;
+  wireStars();markStarred();
+  // összefoglaló kártya a térképen
+  const secName=secs.length===1?' · '+esc(SECBY[secs[0]][1]):'';
+  mc.innerHTML=`<button class="x" type="button" aria-label="Bezárás" title="Bezárás">✕</button>
+    <div class="mk">${secs.map(s=>s+'.').join(' · ')} szakasz${secName}</div>
+    <h3>${esc(NAMES[plan.a])} → ${esc(NAMES[plan.b])}</h3>
+    <div class="tiles">
+      <div class="tile"><div class="v">${fmtKm(km)} km</div><div class="l">táv</div></div>
+      <div class="tile"><div class="v">${rows.length+1}</div><div class="l">pecsételőpont</div></div>
+      <div class="tile"><div class="v">+${f0(up)} m</div><div class="l">emelkedés</div></div>
+      <div class="tile"><div class="v">−${f0(dn)} m</div><div class="l">lejtés</div></div>
+    </div>
+    ${hasE?`<div class="tiles small">
+      <div class="tile lo"><div class="v">${f0(emin)}</div><div class="l">min. m</div></div>
+      <div class="tile hi"><div class="v">${f0(emax)}</div><div class="l">max. m</div></div>
+      <div class="tile up"><div class="v">${pct(gUp)}</div><div class="l">max. emelk.</div></div>
+      <div class="tile dn"><div class="v">${pct(gDn)}</div><div class="l">max. lejtő</div></div>
+    </div>`:''}
+    <div class="mwho"><span>Dénes: <b>${fmtKm(dk)} km</b></span><span>Zoli: <b>${fmtKm(nk)} km</b></span><span>Közös hiány: <b>${fmtKm(ck)} km</b></span></div>
+    <div class="mbtns"><button class="pri" type="button" data-go>Szintprofil, részletek</button><a href="${tpUrl(secs[0])}" target="_blank" rel="noopener">Hivatalos oldal ↗</a></div>`;
+  mc.hidden=false;
+  mc.querySelector('.x').onclick=()=>{mc.hidden=true};
+  mc.querySelector('[data-go]').onclick=()=>{document.getElementById('planFold').open=true;document.getElementById('tervezo').scrollIntoView({behavior:'smooth',block:'start'})};
+  // térkép
+  const latlngs=idx.map(i=>rev?[...TRACKS[i]].reverse():TRACKS[i]);
+  L.polyline(latlngs,{color:'#fff',weight:12,opacity:.8,interactive:false}).addTo(planLayer);
+  L.polyline(latlngs,{color:css('--blue'),weight:6,opacity:1,interactive:false}).addTo(planLayer);
+  [[STAMPS[plan.a],'A'],[STAMPS[plan.b],'B']].forEach(([p,t])=>L.marker(p,{icon:L.divIcon({className:'',html:`<div style="background:${css('--blue')};color:#fff;font:700 12px/22px var(--body);width:22px;height:22px;border-radius:50%;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">${t}</div>`,iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(planLayer));
+  const bounds=L.latLngBounds(latlngs.flat());
+  // a kártya mellé igazítva mutatja az útvonalat
+  const fitPlan=()=>{const side=(!mc.hidden&&getComputedStyle(mc).position==='absolute')?mc.offsetWidth+30:30;map.fitBounds(bounds,{paddingTopLeft:[30,30],paddingBottomRight:[side,30],maxZoom:14})};
+  fitPlan();
+  document.getElementById('planShow').onclick=()=>{document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});fitPlan()};
+  if(!hasE)return;
+  // profil rajz
+  const svg0=document.getElementById('prof');const W=Math.max(300,Math.round(svg0.getBoundingClientRect().width)||800),H=W<500?170:200,P={l:44,r:8,t:10,b:22};svg0.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const span=Math.max(50,emax-emin),y0=Math.floor((emin-span*.08)/50)*50,y1=Math.ceil((emax+span*.08)/50)*50;
+  const X=d=>P.l+(d/km)*(W-P.l-P.r),Y=e=>P.t+(1-(e-y0)/(y1-y0))*(H-P.t-P.b);
+  const svg=document.getElementById('prof');const NS='http://www.w3.org/2000/svg';
+  const mk=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e};
+  const ystep=(y1-y0)>600?200:(y1-y0)>250?100:50;
+  for(let v=y0;v<=y1;v+=ystep){mk('line',{x1:P.l,x2:W-P.r,y1:Y(v),y2:Y(v),class:'grid'});mk('text',{x:P.l-6,y:Y(v)+4,'text-anchor':'end'},v+' m')}
+  const xstep=(km/(W/70))>5?10:(km/(W/70))>2?5:(km/(W/70))>1?2:1;
+  for(let v=0;v<=km+1e-9;v+=xstep)mk('text',{x:X(v),y:H-6,'text-anchor':'middle'},v+' km');
+  let d='M'+X(0)+' '+Y(el[0]);for(let k=1;k<el.length;k++)d+='L'+X(dkm[k]).toFixed(1)+' '+Y(el[k]).toFixed(1);
+  mk('path',{d:d+`L${X(km)} ${Y(y0)}L${X(0)} ${Y(y0)}Z`,class:'area'});mk('path',{d,class:'ln'});
+  const cur=mk('line',{x1:0,x2:0,y1:P.t,y2:H-P.b,class:'cur',visibility:'hidden'});
+  const ps=document.getElementById('pstrip');ps.style.marginLeft=(P.l/W*100)+'%';ps.style.marginRight=(P.r/W*100)+'%';
+  rows.forEach(r=>{const s=document.createElement('i');s.className='s-'+cls(r);s.style.flex=r[4]+' 0 0';s.title=`${r[2]} → ${r[3]}`;ps.appendChild(s)});
+  const pinfo=document.getElementById('pinfo');
+  function at(cx){const r=svg.getBoundingClientRect();const x=(cx-r.left)/r.width*W;const dv=Math.max(0,Math.min(km,(x-P.l)/(W-P.l-P.r)*km));
+    let k=0;while(k<dkm.length-1&&dkm[k+1]<dv)k++;
+    cur.setAttribute('x1',X(dkm[k]));cur.setAttribute('x2',X(dkm[k]));cur.setAttribute('visibility','visible');
+    curMark.setLatLng(pts[k]).addTo(map);const r0=SEG[segOf[k]];
+    pinfo.innerHTML=`<strong class="num">${fmtKm(dkm[k])} km · ${f0(el[k])} m</strong> · ${esc(r0[2])} → ${esc(r0[3])}`}
+  svg.addEventListener('pointermove',e=>at(e.clientX));svg.addEventListener('pointerdown',e=>at(e.clientX));
+  svg.addEventListener('pointerleave',()=>{cur.setAttribute('visibility','hidden');curMark.remove();pinfo.textContent='Vidd az egeret a szintprofilra: a térképen is mutatja a pontot.'});
+}
+// ===== Csillagozott útvonalak (plans.json a repóban) =====
+const REPO='confidodev/confidodev.github.io', PLANS_PATH='horizont/plans.json';
+const KINDS={run:{label:'Egyedül tervezem',title:'Egyedül tervezem (zöld csillag)'},nori:{label:'Zolival közösen',title:'Zolival közösen (narancs csillag)'}};
+let PLANS=[];
+const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>';
+const getTok=()=>{try{return localStorage.getItem('kt_gh_token')||''}catch(e){return ''}};
+const setTok=t=>{try{t?localStorage.setItem('kt_gh_token',t):localStorage.removeItem('kt_gh_token')}catch(e){}};
+const isEditor=()=>!!getTok();
+function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500)}
+const has=(a,b,k)=>PLANS.some(p=>p.a===a&&p.b===b&&p.k===k);
+function starBtns(){const ed=isEditor();return `<div class="stars">${Object.keys(KINDS).map(k=>`<button class="star ${k}" type="button" data-k="${k}" aria-pressed="${has(plan.a,plan.b,k)}" title="${KINDS[k].title}${ed?'':' – csak szerkesztő módban állítható'}" aria-label="${KINDS[k].title}">${STAR}</button>`).join('')}</div>`}
+function wireStars(){document.querySelectorAll('#planOut .star').forEach(b=>b.onclick=()=>toggleStar(b.dataset.k,b))}
+const b64=s=>btoa(unescape(encodeURIComponent(s)));
+const unb64=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
+async function ghGet(){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${PLANS_PATH}?ref=main&t=${Date.now()}`,{headers:{Authorization:'Bearer '+getTok(),Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(r.status===401||r.status===403)throw new Error('auth');
+  if(!r.ok)throw new Error('get '+r.status);
+  const j=await r.json();return {sha:j.sha,data:JSON.parse(unb64(j.content)||'[]')};
+}
+async function ghPut(data,sha,msg){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${PLANS_PATH}`,{method:'PUT',headers:{Authorization:'Bearer '+getTok(),Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({message:msg,content:b64(JSON.stringify(data,null,1)+'\n'),sha,branch:'main'})});
+  if(r.status===401||r.status===403)throw new Error('auth');
+  if(r.status===409)throw new Error('conflict');
+  if(!r.ok)throw new Error('put '+r.status);
+}
+async function toggleStar(k,btn){
+  if(!isEditor()){toast('Csillagozni szerkesztő módban lehet (az oldal alján).');return}
+  if(btn.classList.contains('busy'))return;
+  const a=plan.a,b=plan.b,on=!has(a,b,k);
+  btn.classList.add('busy');
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const {sha,data}=await ghGet();
+      let next=data.filter(p=>!(p.a===a&&p.b===b&&p.k===k));
+      if(on)next.push({a,b,k,d:new Date().toISOString().slice(0,10)});
+      await ghPut(next,sha,`${on?'Csillag':'Csillag törlése'} (${KINDS[k].label}): ${NAMES[a]} → ${NAMES[b]}`);
+      PLANS=next;btn.setAttribute('aria-pressed',String(on));renderStarred();
+      toast(on?`Elmentve: ${KINDS[k].label}`:'Csillag törölve');break;
+    }catch(e){
+      if(e.message==='conflict'&&attempt===0)continue;
+      toast(e.message==='auth'?'A GitHub-kulcs nem érvényes. Állítsd be újra a szerkesztő módot.':'Nem sikerült menteni, próbáld újra.');break;
+    }
+  }
+  btn.classList.remove('busy');
+}
+function markStarred(){document.querySelectorAll('#starred li button').forEach(x=>x.classList.toggle('on',+x.dataset.a===plan.a&&+x.dataset.b===plan.b))}
+function renderStarred(){
+  const ns=PLANS.length;document.getElementById('planMeta').textContent=ns?`· ${ns} csillagozott útvonal`:'';
+  const box=document.getElementById('starred');
+  box.innerHTML=Object.keys(KINDS).map(k=>{
+    const list=PLANS.filter(p=>p.k===k&&NAMES[p.a]!=null&&NAMES[p.b]!=null);
+    const items=list.map(p=>{const lo=Math.min(p.a,p.b),hi=Math.max(p.a,p.b);const kmv=SEG.filter(r=>{const [x,y]=ptsOf(r[0]);return x>=lo&&y<=hi}).reduce((s,r)=>s+r[4],0);
+      return `<li><button type="button" data-a="${p.a}" data-b="${p.b}">${esc(NAMES[p.a])} → ${esc(NAMES[p.b])}<small>${fmtKm(kmv)} km</small></button></li>`}).join('');
+    return `<div class="sgroup ${k}"><h3><span class="si">★</span>${KINDS[k].label}</h3>${items?`<ul>${items}</ul>`:'<div class="empty">Még nincs csillagozott útvonal.</div>'}</div>`}).join('');
+  box.querySelectorAll('li button').forEach(x=>x.onclick=()=>{cFrom.set(+x.dataset.a);cTo.set(+x.dataset.b);planRender();document.getElementById('planOut').scrollIntoView({behavior:'smooth',block:'start'})});
+  markStarred();
+}
+async function loadPlans(){
+  try{
+    if(isEditor()){PLANS=(await ghGet()).data}
+    else{const r=await fetch('plans.json?t='+Date.now(),{cache:'no-store'});PLANS=r.ok?await r.json():[]}
+  }catch(e){try{const r=await fetch('plans.json?t='+Date.now(),{cache:'no-store'});PLANS=r.ok?await r.json():[]}catch(_){PLANS=[]}}
+  renderStarred();if(plan.a>=0&&plan.b>=0)planRender();
+}
+function updEditBtn(){document.getElementById('editBtn').textContent=isEditor()?'Szerkesztő mód: bekapcsolva (kilépés)':'Szerkesztő mód'}
+document.getElementById('editBtn').onclick=()=>{
+  if(isEditor()){if(confirm('Kilépsz a szerkesztő módból ezen az eszközön?')){setTok('');updEditBtn();loadPlans()}return}
+  const t=prompt('Szerkesztő mód: illeszd be a GitHub-kulcsodat (token). Csak ezen az eszközön tárolódik.');
+  if(t&&t.trim()){setTok(t.trim());updEditBtn();loadPlans().then(()=>toast('Szerkesztő mód bekapcsolva'))}
+};
+updEditBtn();renderStarred();loadPlans();
+
+// megosztható link: #ut=12-30
+(function(){const m=location.hash.match(/ut=(\d+)-(\d+)/);if(m){const a=+m[1]-1,b=+m[2]-1;if(NAMES[a]!=null&&NAMES[b]!=null){cFrom.set(a);cTo.set(b);planRender()}}})();
+</script>
+</body>
+</html>
